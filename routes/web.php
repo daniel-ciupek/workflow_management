@@ -2,14 +2,17 @@
 
 use Illuminate\Support\Facades\Route;
 
-Route::view('/', 'welcome');
+Route::get('/', fn () => redirect()->route('login'));
 
-Route::view('dashboard', 'dashboard')
-    ->middleware(['auth', 'verified'])
-    ->name('dashboard');
+// Admin routes
+Route::middleware(['auth', 'isAdmin'])->prefix('admin')->name('admin.')->group(function () {
+    Route::view('dashboard', 'admin.dashboard')->name('dashboard');
+    Route::view('change-pin', 'admin.change-pin')->name('change-pin');
+});
 
-Route::view('profile', 'profile')
-    ->middleware(['auth'])
-    ->name('profile');
+// Employee routes
+Route::middleware(['auth', 'isEmployee'])->prefix('employee')->name('employee.')->group(function () {
+    Route::view('dashboard', 'employee.dashboard')->name('dashboard');
+});
 
 require __DIR__.'/auth.php';
