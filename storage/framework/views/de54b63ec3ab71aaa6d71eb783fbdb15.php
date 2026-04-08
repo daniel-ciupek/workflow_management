@@ -9,28 +9,42 @@
 <?php endif; ?>
 <?php $component->withAttributes([]); ?>
     <div class="flex items-center justify-between mb-6">
-        <h2 class="text-2xl font-bold">Admin Dashboard</h2>
+        <h2 class="text-2xl font-bold">Dashboard</h2>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="card bg-base-100 shadow">
+    <?php
+        $employeeCount = \App\Models\User::where('role', 'employee')->count();
+        $taskCount = \App\Models\Task::count();
+        $doneCount = \App\Models\Task::withCount([
+                'users',
+                'users as done_count' => fn($q) => $q->where('task_user.done', true),
+            ])->get()->filter(fn($t) => $t->users_count > 0 && $t->done_count === $t->users_count)->count();
+    ?>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        <a href="<?php echo e(route('admin.employees')); ?>" class="card bg-base-100 shadow hover:shadow-md transition-shadow">
             <div class="card-body">
                 <h3 class="card-title text-sm text-base-content/60">Employees</h3>
-                <p class="text-3xl font-bold">—</p>
+                <p class="text-4xl font-bold text-primary"><?php echo e($employeeCount); ?></p>
             </div>
-        </div>
+        </a>
+        <a href="<?php echo e(route('admin.tasks')); ?>" class="card bg-base-100 shadow hover:shadow-md transition-shadow">
+            <div class="card-body">
+                <h3 class="card-title text-sm text-base-content/60">Total Tasks</h3>
+                <p class="text-4xl font-bold text-primary"><?php echo e($taskCount); ?></p>
+            </div>
+        </a>
         <div class="card bg-base-100 shadow">
             <div class="card-body">
-                <h3 class="card-title text-sm text-base-content/60">Tasks</h3>
-                <p class="text-3xl font-bold">—</p>
+                <h3 class="card-title text-sm text-base-content/60">Fully Completed</h3>
+                <p class="text-4xl font-bold text-success"><?php echo e($doneCount); ?></p>
             </div>
         </div>
-        <div class="card bg-base-100 shadow">
-            <div class="card-body">
-                <h3 class="card-title text-sm text-base-content/60">Completed</h3>
-                <p class="text-3xl font-bold">—</p>
-            </div>
-        </div>
+    </div>
+
+    <div class="flex gap-3">
+        <a href="<?php echo e(route('admin.tasks.create')); ?>" class="btn btn-primary">+ New Task</a>
+        <a href="<?php echo e(route('admin.employees')); ?>" class="btn btn-ghost">Manage Employees</a>
     </div>
  <?php echo $__env->renderComponent(); ?>
 <?php endif; ?>

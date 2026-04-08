@@ -12,8 +12,17 @@
 <body class="font-sans antialiased bg-base-200 min-h-screen">
 
     <div class="navbar bg-base-100 shadow-sm px-4 sticky top-0 z-50">
-        <div class="navbar-start">
+        <div class="navbar-start gap-4">
             <span class="text-lg font-bold text-primary">Workflow Management</span>
+            @auth
+                @if(auth()->user()->isAdmin())
+                    <nav class="hidden md:flex gap-1">
+                        <a href="{{ route('admin.dashboard') }}" class="btn btn-ghost btn-sm {{ request()->routeIs('admin.dashboard') ? 'btn-active' : '' }}">Dashboard</a>
+                        <a href="{{ route('admin.employees') }}" class="btn btn-ghost btn-sm {{ request()->routeIs('admin.employees') ? 'btn-active' : '' }}">Employees</a>
+                        <a href="{{ route('admin.tasks') }}" class="btn btn-ghost btn-sm {{ request()->routeIs('admin.tasks*') ? 'btn-active' : '' }}">Tasks</a>
+                    </nav>
+                @endif
+            @endauth
         </div>
 
         <div class="navbar-end gap-2">

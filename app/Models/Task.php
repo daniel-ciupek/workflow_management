@@ -13,6 +13,11 @@ class Task extends Model
     protected $fillable = [
         'title',
         'description',
+        'attachments',
+    ];
+
+    protected $casts = [
+        'attachments' => 'array',
     ];
 
     public function users(): BelongsToMany
