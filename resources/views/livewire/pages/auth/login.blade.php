@@ -1,71 +1,97 @@
 <?php
 
-use App\Livewire\Forms\LoginForm;
-use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
 use Livewire\Attributes\Layout;
 use Livewire\Volt\Component;
 
 new #[Layout('layouts.guest')] class extends Component
 {
-    public LoginForm $form;
+    public string $pin = '';
 
-    /**
-     * Handle an incoming authentication request.
-     */
-    public function login(): void
+    public function authenticate(): void
     {
-        $this->validate();
+        $key = 'login.' . request()->ip();
 
-        $this->form->authenticate();
+        if (RateLimiter::tooManyAttempts($key, 5)) {
+            $seconds = RateLimiter::availableIn($key);
+            $this->addError('pin', "Too many login attempts. Please try again in {$seconds} seconds.");
+            return;
+        }
 
-        Session::regenerate();
+        $len = strlen($this->pin);
 
-        $this->redirectIntended(default: route('dashboard', absolute: false), navigate: true);
+        if (!in_array($len, [4, 6]) || !ctype_digit($this->pin)) {
+            RateLimiter::hit($key, 60);
+            $this->addError('pin', 'Invalid PIN. Please enter a 4-digit (employee) or 6-digit (admin) PIN.');
+            $this->pin = '';
+            return;
+        }
+
+        $role = $len === 6 ? 'admin' : 'employee';
+
+        $user = \App\Models\User::where('pin', $this->pin)
+            ->where('role', $role)
+            ->first();
+
+        if (!$user) {
+            RateLimiter::hit($key, 60);
+            $this->addError('pin', 'Invalid PIN. Please try again.');
+            $this->pin = '';
+            return;
+        }
+
+        RateLimiter::clear($key);
+        Auth::login($user);
+        session()->regenerate();
+
+        if ($user->isAdmin()) {
+            $this->redirect(route('admin.dashboard'), navigate: true);
+        } else {
+            $this->redirect(route('employee.dashboard'), navigate: true);
+        }
     }
 }; ?>
 
-<div>
-    <!-- Session Status -->
-    <x-auth-session-status class="mb-4" :status="session('status')" />
+<div class="w-full">
+    <div class="text-center mb-8">
+        <h1 class="text-2xl font-bold text-base-content">Workflow Management</h1>
+        <p class="text-base-content/60 mt-1 text-sm">Enter your PIN to sign in</p>
+    </div>
 
-    <form wire:submit="login">
-        <!-- Email Address -->
-        <div>
-            <x-input-label for="email" :value="__('Email')" />
-            <x-text-input wire:model="form.email" id="email" class="block mt-1 w-full" type="email" name="email" required autofocus autocomplete="username" />
-            <x-input-error :messages="$errors->get('form.email')" class="mt-2" />
-        </div>
-
-        <!-- Password -->
-        <div class="mt-4">
-            <x-input-label for="password" :value="__('Password')" />
-
-            <x-text-input wire:model="form.password" id="password" class="block mt-1 w-full"
-                            type="password"
-                            name="password"
-                            required autocomplete="current-password" />
-
-            <x-input-error :messages="$errors->get('form.password')" class="mt-2" />
-        </div>
-
-        <!-- Remember Me -->
-        <div class="block mt-4">
-            <label for="remember" class="inline-flex items-center">
-                <input wire:model="form.remember" id="remember" type="checkbox" class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500" name="remember">
-                <span class="ms-2 text-sm text-gray-600">{{ __('Remember me') }}</span>
+    <form wire:submit="authenticate" class="space-y-5">
+        <div class="form-control">
+            <label class="label" for="pin">
+                <span class="label-text font-medium">PIN</span>
             </label>
+            <input
+                wire:model="pin"
+                id="pin"
+                type="password"
+                inputmode="numeric"
+                maxlength="6"
+                placeholder="Enter your PIN"
+                class="input input-bordered w-full text-center tracking-widest text-lg @error('pin') input-error @enderror"
+                autofocus
+                autocomplete="off"
+            />
+            @error('pin')
+                <label class="label">
+                    <span class="label-text-alt text-error">{{ $message }}</span>
+                </label>
+            @enderror
         </div>
 
-        <div class="flex items-center justify-end mt-4">
-            @if (Route::has('password.request'))
-                <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('password.request') }}" wire:navigate>
-                    {{ __('Forgot your password?') }}
-                </a>
-            @endif
-
-            <x-primary-button class="ms-3">
-                {{ __('Log in') }}
-            </x-primary-button>
-        </div>
+        <button type="submit" class="btn btn-primary w-full" wire:loading.attr="disabled">
+            <span wire:loading.remove>Sign In</span>
+            <span wire:loading>
+                <span class="loading loading-spinner loading-sm"></span>
+                Signing in...
+            </span>
+        </button>
     </form>
+
+    <p class="text-center text-xs text-base-content/40 mt-6">
+        4-digit PIN for employees &bull; 6-digit PIN for administrators
+    </p>
 </div>
