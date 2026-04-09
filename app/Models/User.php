@@ -14,6 +14,8 @@ class User extends Authenticatable
         'name',
         'pin',
         'role',
+        'is_super',
+        'admin_id',
     ];
 
     protected $hidden = [
@@ -30,6 +32,11 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return $this->role === 'admin';
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->role === 'admin' && (bool) $this->is_super;
     }
 
     public function isEmployee(): bool

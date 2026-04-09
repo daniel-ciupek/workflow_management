@@ -10,23 +10,43 @@ new class extends Component {
     use WithFileUploads;
 
     public string $title = '';
+    public string $address = '';
+    public string $materials = '';
     public string $description = '';
     public array $selectedEmployees = [];
     public $attachments = [];
+    public $attachmentBatch = [];
+
+    public function addBatch(): void
+    {
+        $this->attachments = array_merge($this->attachments, $this->attachmentBatch);
+        $this->attachmentBatch = [];
+    }
+
+    public function removeAttachment(int $index): void
+    {
+        array_splice($this->attachments, $index, 1);
+        $this->attachments = array_values($this->attachments);
+    }
 
     public function save(): void
     {
         $this->validate([
             'title'                => 'required|string|max:255',
+            'address'              => 'nullable|string|max:255',
+            'materials'            => 'nullable|string',
             'description'          => 'nullable|string',
             'selectedEmployees'    => 'required|array|min:1',
             'selectedEmployees.*'  => ['integer', Rule::exists('users', 'id')->where('role', 'employee')],
-            'attachments'          => 'nullable|array|max:5',
+            'attachments'          => 'nullable|array',
             'attachments.*'        => 'file|mimes:jpg,jpeg,pdf|max:15360',
         ]);
 
         $task = Task::create([
+            'created_by'  => auth()->id(),
             'title'       => $this->title,
+            'address'     => $this->address ?: null,
+            'materials'   => $this->materials ?: null,
             'description' => $this->description,
         ]);
 
@@ -50,7 +70,10 @@ new class extends Component {
     public function with(): array
     {
         return [
-            'employees' => User::where('role', 'employee')->orderBy('name')->get(),
+            'employees' => User::where('role', 'employee')
+                ->where('admin_id', auth()->id())
+                ->orderBy('name')
+                ->get(),
         ];
     }
 }; ?>
@@ -65,12 +88,28 @@ new class extends Component {
         <div class="card-body space-y-5">
             <form wire:submit="save" class="space-y-5">
 
-                {{-- Title --}}
+                {{-- Project --}}
                 <div class="form-control">
-                    <label class="label"><span class="label-text font-medium">Title</span></label>
+                    <label class="label"><span class="label-text font-medium">Project</span></label>
                     <input wire:model="title" type="text" class="input input-bordered @error('title') input-error @enderror"
-                           placeholder="Task title" autofocus />
+                           placeholder="Project name" autofocus />
                     @error('title') <label class="label"><span class="label-text-alt text-error">{{ $message }}</span></label> @enderror
+                </div>
+
+                {{-- Address --}}
+                <div class="form-control">
+                    <label class="label"><span class="label-text font-medium">Address</span></label>
+                    <textarea wire:model="address" class="textarea textarea-bordered @error('address') textarea-error @enderror"
+                              rows="4" placeholder="Site address..."></textarea>
+                    @error('address') <label class="label"><span class="label-text-alt text-error">{{ $message }}</span></label> @enderror
+                </div>
+
+                {{-- Materials --}}
+                <div class="form-control">
+                    <label class="label"><span class="label-text font-medium">Materials</span></label>
+                    <textarea wire:model="materials" class="textarea textarea-bordered @error('materials') textarea-error @enderror"
+                              rows="4" placeholder="Required materials..."></textarea>
+                    @error('materials') <label class="label"><span class="label-text-alt text-error">{{ $message }}</span></label> @enderror
                 </div>
 
                 {{-- Description --}}
@@ -102,19 +141,51 @@ new class extends Component {
                 </div>
 
                 {{-- Attachments --}}
-                <div class="form-control">
+                <div class="form-control"
+                     x-data="{
+                         uploading: false,
+                         progress: 0,
+                         handle(e) {
+                             const selected = Array.from(e.target.files);
+                             if (!selected.length) return;
+                             this.uploading = true;
+                             this.progress = 0;
+                             $wire.uploadMultiple('attachmentBatch', selected,
+                                 () => { this.uploading = false; $wire.call('addBatch'); e.target.value = ''; },
+                                 () => { this.uploading = false; },
+                                 (pct) => { this.progress = pct; }
+                             );
+                         }
+                     }">
                     <label class="label">
                         <span class="label-text font-medium">Attachments</span>
-                        <span class="label-text-alt text-base-content/50">JPG / PDF · max 15 MB each · max 5 files</span>
+                        <span class="label-text-alt text-base-content/50">JPG / PDF · max 15 MB · można dodawać partiami</span>
                     </label>
-                    <input wire:model="attachments" type="file" multiple accept=".jpg,.jpeg,.pdf"
+                    <input type="file" multiple accept=".jpg,.jpeg,.pdf"
+                           @change="handle($event)"
                            class="file-input file-input-bordered w-full @error('attachments') file-input-error @enderror" />
-                    <div wire:loading wire:target="attachments" class="label">
-                        <span class="label-text-alt text-info">
-                            <span class="loading loading-spinner loading-xs"></span> Uploading...
-                        </span>
+
+                    <div x-show="uploading" class="mt-2">
+                        <div class="flex items-center gap-2 text-sm text-info">
+                            <span class="loading loading-spinner loading-xs"></span>
+                            Uploading... <span x-text="progress + '%'"></span>
+                        </div>
+                        <progress class="progress progress-info w-full mt-1" :value="progress" max="100"></progress>
                     </div>
-                    @error('attachments') <label class="label"><span class="label-text-alt text-error">{{ $message }}</span></label> @enderror
+
+                    {{-- Accumulated files list --}}
+                    @if(count($attachments) > 0)
+                        <ul class="mt-2 space-y-1">
+                            @foreach($attachments as $i => $file)
+                                <li class="flex items-center justify-between gap-2 text-xs bg-base-200 px-3 py-1.5 rounded-lg">
+                                    <span class="text-base-content/70 truncate">{{ $file->getClientOriginalName() }}</span>
+                                    <button type="button" wire:click="removeAttachment({{ $i }})"
+                                            class="text-error shrink-0 hover:underline">Remove</button>
+                                </li>
+                            @endforeach
+                        </ul>
+                    @endif
+
                     @error('attachments.*') <label class="label"><span class="label-text-alt text-error">{{ $message }}</span></label> @enderror
                 </div>
 

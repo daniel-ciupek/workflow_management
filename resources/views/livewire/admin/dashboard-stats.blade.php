@@ -8,12 +8,14 @@ new class extends Component {
 
     public function with(): array
     {
-        $employeeCount = User::where('role', 'employee')->count();
-        $taskCount     = Task::count();
+        $adminId       = auth()->id();
+        $employeeCount = User::where('role', 'employee')->where('admin_id', $adminId)->count();
+        $taskCount     = Task::where('created_by', $adminId)->count();
         $doneCount     = Task::withCount([
                 'users',
                 'users as done_count' => fn ($q) => $q->where('task_user.done', true),
             ])
+            ->where('created_by', $adminId)
             ->get()
             ->filter(fn ($t) => $t->users_count > 0 && $t->done_count === $t->users_count)
             ->count();

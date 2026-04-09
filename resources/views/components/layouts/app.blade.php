@@ -20,6 +20,9 @@
                         <a href="{{ route('admin.dashboard') }}" class="btn btn-ghost btn-sm {{ request()->routeIs('admin.dashboard') ? 'btn-active' : '' }}">Dashboard</a>
                         <a href="{{ route('admin.employees') }}" class="btn btn-ghost btn-sm {{ request()->routeIs('admin.employees') ? 'btn-active' : '' }}">Employees</a>
                         <a href="{{ route('admin.tasks') }}" class="btn btn-ghost btn-sm {{ request()->routeIs('admin.tasks*') ? 'btn-active' : '' }}">Tasks</a>
+                        @if(auth()->user()->isSuperAdmin())
+                            <a href="{{ route('admin.admins') }}" class="btn btn-ghost btn-sm {{ request()->routeIs('admin.admins') ? 'btn-active' : '' }}">Admins</a>
+                        @endif
                     </nav>
                 @endif
             @endauth
