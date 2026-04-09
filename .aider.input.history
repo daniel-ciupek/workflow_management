@@ -1,0 +1,90 @@
+
+# 2026-04-09 21:11:41.413391
++y
+
+# 2026-04-09 21:12:44.234698
++n
+
+# 2026-04-09 21:15:24.182257
++export DEEPSEEK_API_KEY=sk-e903ab64f79d439eac7c141f11881316
+
+# 2026-04-09 21:16:21.842059
++echo 'export DEEPSEEK_API_KEY=sk-e903ab64f79d439eac7c141f11881316' >> ~/.bashrc && source ~/.bashrc
+
+# 2026-04-09 21:20:25.411341
++n
+
+# 2026-04-09 21:20:44.846566
++przegladnij plik claude.md oraz caly projekt
+
+# 2026-04-09 21:20:53.641046
++echo "DEEPSEEK_API_KEY=sk-e903ab64f79d439eac7c141f11881316" > .env
+
+# 2026-04-09 21:22:24.692252
++zapoznaj sie z plikiem claude.md oraz przegladnij projekt
+
+# 2026-04-09 21:23:02.355941
++chce zebys mial wglad do pelnego projektu do calego folderu workflow_management
+
+# 2026-04-09 21:23:18.499655
++n
+
+# 2026-04-09 21:23:50.170012
++chce zebys mial wglad do calego projektu
+
+# 2026-04-09 21:23:53.063872
++n
+
+# 2026-04-09 21:24:15.445429
++chce zebys mial dostep do pelnego projektu 
+
+# 2026-04-09 21:26:48.917851
++nie działają mi funkcje delete w całym projekcie przy usuwaniu userow jak rowniez przy usuwaniu adminów i tasków
+
+# 2026-04-09 21:27:13.358400
++a
+
+# 2026-04-09 21:28:41.644266
++y
+
+# 2026-04-09 21:30:19.045239
++/run php artisan migrate
+
+# 2026-04-09 21:30:19.045282
++/run php artisan migrate
+
+# 2026-04-09 21:30:25.582170
++y
+
+# 2026-04-09 21:30:27.545138
++/run php artisan migrate:fresh --seed
+
+# 2026-04-09 21:30:27.545189
++/run php artisan migrate:fresh --seed
+
+# 2026-04-09 21:30:28.926601
++y
+
+# 2026-04-09 21:31:27.098009
++dalej nie działa usuwanie 
+
+# 2026-04-09 21:33:01.591061
++sprawdz w calym projekcie bo mam problem nie dziala mi delete w calym projekcie nie moge usuwac tasków userów i adminów
+
+# 2026-04-09 21:33:44.066813
++a
+
+# 2026-04-09 21:37:29.244305
++pamiętaj ważne żeby nie można było usunąć admina który ma ustawiony fabrycznie kod 000000 to admin główny ktory nie powinien byc usuwany w zadnym wypadku 
+
+# 2026-04-09 21:41:28.631865
++chce zebys mial dostep do pełnego projektu żebys mogł przeglądać wszystki pliki 
+
+# 2026-04-09 21:42:36.017032
++w całym projekcie nie reaguje przycisk delete przeglądnij projekt i sprawdz jak to naprawić
+
+# 2026-04-09 21:43:24.219979
++a
+
+# 2026-04-09 21:46:56.956824
++mam nadzieje ze nie wysylasz mi zadnych commitow na git hub
