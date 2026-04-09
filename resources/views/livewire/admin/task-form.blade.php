@@ -2,6 +2,7 @@
 
 use App\Models\Task;
 use App\Models\User;
+use Illuminate\Validation\Rule;
 use Livewire\Volt\Component;
 use Livewire\WithFileUploads;
 
@@ -19,7 +20,7 @@ new class extends Component {
             'title'                => 'required|string|max:255',
             'description'          => 'nullable|string',
             'selectedEmployees'    => 'required|array|min:1',
-            'selectedEmployees.*'  => 'exists:users,id',
+            'selectedEmployees.*'  => ['integer', Rule::exists('users', 'id')->where('role', 'employee')],
             'attachments'          => 'nullable|array|max:5',
             'attachments.*'        => 'file|mimes:jpg,jpeg,pdf|max:15360',
         ]);

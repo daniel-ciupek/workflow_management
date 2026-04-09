@@ -10,8 +10,8 @@ class IsEmployee
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (!auth()->check() || !auth()->user()->isEmployee()) {
-            abort(403);
+        if (!session('employee_access')) {
+            return redirect()->route('login');
         }
 
         return $next($request);

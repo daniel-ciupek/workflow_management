@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Setting;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Livewire\Attributes\Layout;
@@ -21,35 +22,43 @@ new #[Layout('layouts.guest')] class extends Component
 
         $len = strlen($this->pin);
 
-        if (!in_array($len, [4, 6]) || !ctype_digit($this->pin)) {
-            RateLimiter::hit($key, 60);
-            $this->addError('pin', 'Invalid PIN. Please enter a 4-digit (employee) or 6-digit (admin) PIN.');
-            $this->pin = '';
+        // Admin — 6-digit PIN
+        if ($len === 6 && ctype_digit($this->pin)) {
+            $user = \App\Models\User::where('pin', $this->pin)->where('role', 'admin')->first();
+
+            if (!$user) {
+                RateLimiter::hit($key, 60);
+                $this->addError('pin', 'Invalid PIN. Please try again.');
+                $this->pin = '';
+                return;
+            }
+
+            RateLimiter::clear($key);
+            Auth::login($user);
+            $this->redirect(route('admin.dashboard'));
             return;
         }
 
-        $role = $len === 6 ? 'admin' : 'employee';
+        // Employee — global 4-digit PIN
+        if ($len === 4 && ctype_digit($this->pin)) {
+            $employeePin = Setting::get('employee_pin');
 
-        $user = \App\Models\User::where('pin', $this->pin)
-            ->where('role', $role)
-            ->first();
+            if (!$employeePin || $this->pin !== $employeePin) {
+                RateLimiter::hit($key, 60);
+                $this->addError('pin', 'Invalid PIN. Please try again.');
+                $this->pin = '';
+                return;
+            }
 
-        if (!$user) {
-            RateLimiter::hit($key, 60);
-            $this->addError('pin', 'Invalid PIN. Please try again.');
-            $this->pin = '';
+            RateLimiter::clear($key);
+            session()->put('employee_access', true);
+            $this->redirect(route('employee.dashboard'));
             return;
         }
 
-        RateLimiter::clear($key);
-        Auth::login($user);
-        session()->regenerate();
-
-        if ($user->isAdmin()) {
-            $this->redirect(route('admin.dashboard'), navigate: true);
-        } else {
-            $this->redirect(route('employee.dashboard'), navigate: true);
-        }
+        RateLimiter::hit($key, 60);
+        $this->addError('pin', 'Invalid PIN. Enter 4 digits (employees) or 6 digits (admin).');
+        $this->pin = '';
     }
 }; ?>
 

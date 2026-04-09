@@ -14,7 +14,6 @@ new class extends Component {
     public ?int $deletingId = null;
 
     public string $name = '';
-    public string $pin = '';
 
     public function openCreate(): void
     {
@@ -28,7 +27,6 @@ new class extends Component {
         $user = User::findOrFail($id);
         $this->editingId = $id;
         $this->name = $user->name;
-        $this->pin = '';
         $this->showModal = true;
     }
 
@@ -36,21 +34,13 @@ new class extends Component {
     {
         $this->validate([
             'name' => 'required|string|max:255',
-            'pin'  => $this->editingId
-                ? 'nullable|digits:4|unique:users,pin,' . $this->editingId
-                : 'required|digits:4|unique:users,pin',
         ]);
 
         if ($this->editingId) {
-            $data = ['name' => $this->name];
-            if ($this->pin !== '') {
-                $data['pin'] = $this->pin;
-            }
-            User::findOrFail($this->editingId)->update($data);
+            User::findOrFail($this->editingId)->update(['name' => $this->name]);
         } else {
             User::create([
                 'name' => $this->name,
-                'pin'  => $this->pin,
                 'role' => 'employee',
             ]);
         }
@@ -86,7 +76,6 @@ new class extends Component {
     private function resetForm(): void
     {
         $this->name = '';
-        $this->pin = '';
         $this->editingId = null;
         $this->resetValidation();
     }
@@ -114,7 +103,6 @@ new class extends Component {
                 <tr>
                     <th>#</th>
                     <th>Name</th>
-                    <th>PIN</th>
                     <th class="text-right">Actions</th>
                 </tr>
             </thead>
@@ -123,7 +111,6 @@ new class extends Component {
                     <tr>
                         <td class="text-base-content/50 text-sm">{{ $employee->id }}</td>
                         <td class="font-medium">{{ $employee->name }}</td>
-                        <td><span class="badge badge-ghost font-mono">****</span></td>
                         <td class="text-right space-x-1">
                             <button wire:click="openEdit({{ $employee->id }})" class="btn btn-ghost btn-xs">Edit</button>
                             <button wire:click="confirmDelete({{ $employee->id }})" class="btn btn-ghost btn-xs text-error">Delete</button>
@@ -131,7 +118,7 @@ new class extends Component {
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="4" class="text-center text-base-content/50 py-8">No employees yet.</td>
+                        <td colspan="3" class="text-center text-base-content/50 py-8">No employees yet.</td>
                     </tr>
                 @endforelse
             </tbody>
@@ -149,17 +136,9 @@ new class extends Component {
             <form wire:submit="save" class="space-y-4">
                 <div class="form-control">
                     <label class="label"><span class="label-text font-medium">Name</span></label>
-                    <input wire:model="name" type="text" class="input input-bordered @error('name') input-error @enderror" placeholder="Full name" autofocus />
+                    <input wire:model="name" type="text" class="input input-bordered @error('name') input-error @enderror"
+                           placeholder="Full name" autofocus />
                     @error('name') <label class="label"><span class="label-text-alt text-error">{{ $message }}</span></label> @enderror
-                </div>
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text font-medium">PIN (4 digits)</span>
-                        @if($editingId) <span class="label-text-alt text-base-content/50">Leave blank to keep current</span> @endif
-                    </label>
-                    <input wire:model="pin" type="password" inputmode="numeric" maxlength="4"
-                           class="input input-bordered @error('pin') input-error @enderror" placeholder="••••" />
-                    @error('pin') <label class="label"><span class="label-text-alt text-error">{{ $message }}</span></label> @enderror
                 </div>
                 <div class="modal-action">
                     <button type="button" wire:click="closeModals" class="btn btn-ghost">Cancel</button>
