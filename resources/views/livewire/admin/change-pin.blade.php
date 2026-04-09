@@ -118,7 +118,8 @@ new class extends Component
         </div>
     </div>
 
-    {{-- Global Employee PIN --}}
+    {{-- Global Employee PIN — super admin only --}}
+    @if(auth()->user()->isSuperAdmin())
     <div class="card bg-base-100 shadow">
         <div class="card-body space-y-4">
             <h3 class="font-semibold text-lg">Employee PIN <span class="text-base-content/40 text-sm font-normal">(4 digits · shared by all employees)</span></h3>
@@ -151,6 +152,8 @@ new class extends Component
             </form>
         </div>
     </div>
+
+    @endif
 
     <a href="{{ route('admin.dashboard') }}" class="btn btn-ghost btn-sm">← Back to Dashboard</a>
 </div>

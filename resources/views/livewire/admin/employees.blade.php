@@ -40,8 +40,9 @@ new class extends Component {
             User::findOrFail($this->editingId)->update(['name' => $this->name]);
         } else {
             User::create([
-                'name' => $this->name,
-                'role' => 'employee',
+                'name'     => $this->name,
+                'role'     => 'employee',
+                'admin_id' => auth()->id(),
             ]);
         }
 
@@ -84,6 +85,7 @@ new class extends Component {
     {
         return [
             'employees' => User::where('role', 'employee')
+                ->where('admin_id', auth()->id())
                 ->orderBy('name')
                 ->paginate(15),
         ];
@@ -130,7 +132,7 @@ new class extends Component {
 
     {{-- Create / Edit Modal --}}
     @if($showModal)
-    <div class="modal modal-open">
+    <div class="modal modal-open" @click.self="$wire.closeModals()">
         <div class="modal-box">
             <h3 class="font-bold text-lg mb-4">{{ $editingId ? 'Edit Employee' : 'New Employee' }}</h3>
             <form wire:submit="save" class="space-y-4">
@@ -149,7 +151,6 @@ new class extends Component {
                 </div>
             </form>
         </div>
-        <div class="modal-backdrop" wire:click="closeModals"></div>
     </div>
     @endif
 

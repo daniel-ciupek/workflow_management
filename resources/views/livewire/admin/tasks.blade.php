@@ -11,6 +11,10 @@ use Livewire\WithPagination;
 new class extends Component {
     use WithPagination, WithFileUploads;
 
+    // View
+    public bool $showViewModal = false;
+    public ?int $viewingId = null;
+
     // Delete
     public bool $confirmDelete = false;
     public ?int $deletingId = null;
@@ -19,17 +23,46 @@ new class extends Component {
     public bool $showEditModal = false;
     public ?int $editingId = null;
     public string $editTitle = '';
+    public string $editAddress = '';
+    public string $editMaterials = '';
     public string $editDescription = '';
     public array $editSelectedEmployees = [];
     public array $existingAttachments = [];
     public array $removedAttachments = [];
     public $newAttachments = [];
+    public $newAttachmentBatch = [];
+
+    public function addEditBatch(): void
+    {
+        $this->newAttachments = array_merge($this->newAttachments, $this->newAttachmentBatch);
+        $this->newAttachmentBatch = [];
+    }
+
+    public function removeNewAttachment(int $index): void
+    {
+        array_splice($this->newAttachments, $index, 1);
+        $this->newAttachments = array_values($this->newAttachments);
+    }
+
+    public function openView(int $id): void
+    {
+        $this->viewingId = $id;
+        $this->showViewModal = true;
+    }
+
+    public function closeViewModal(): void
+    {
+        $this->showViewModal = false;
+        $this->viewingId = null;
+    }
 
     public function openEdit(int $id): void
     {
         $task = Task::with('users')->findOrFail($id);
         $this->editingId = $id;
         $this->editTitle = $task->title;
+        $this->editAddress = $task->address ?? '';
+        $this->editMaterials = $task->materials ?? '';
         $this->editDescription = $task->description ?? '';
         $this->editSelectedEmployees = $task->users->pluck('id')->map(fn($id) => (string) $id)->toArray();
         $this->existingAttachments = $task->attachments ?? [];
@@ -51,6 +84,8 @@ new class extends Component {
     {
         $this->validate([
             'editTitle'               => 'required|string|max:255',
+            'editAddress'             => 'nullable|string',
+            'editMaterials'           => 'nullable|string',
             'editDescription'         => 'nullable|string',
             'editSelectedEmployees'   => 'required|array|min:1',
             'editSelectedEmployees.*' => ['integer', Rule::exists('users', 'id')->where('role', 'employee')],
@@ -73,6 +108,8 @@ new class extends Component {
 
         $task->update([
             'title'       => $this->editTitle,
+            'address'     => $this->editAddress ?: null,
+            'materials'   => $this->editMaterials ?: null,
             'description' => $this->editDescription,
             'attachments' => empty($paths) ? null : array_values($paths),
         ]);
@@ -88,6 +125,7 @@ new class extends Component {
         $this->showEditModal = false;
         $this->editingId = null;
         $this->newAttachments = [];
+        $this->newAttachmentBatch = [];
         $this->resetValidation();
     }
 
@@ -116,15 +154,23 @@ new class extends Component {
 
     public function with(): array
     {
+        $tasks = Task::withCount([
+                'users',
+                'users as done_count' => fn ($q) => $q->where('task_user.done', true),
+            ])
+            ->with(['users' => fn ($q) => $q->withPivot('done', 'completed_at')->select('users.id', 'users.name')])
+            ->where('created_by', auth()->id())
+            ->latest()
+            ->paginate(10);
+
+        $viewingTask = $this->viewingId
+            ? Task::with(['users' => fn ($q) => $q->withPivot('done', 'completed_at')->select('users.id', 'users.name')])->find($this->viewingId)
+            : null;
+
         return [
-            'tasks' => Task::withCount([
-                    'users',
-                    'users as done_count' => fn ($q) => $q->where('task_user.done', true),
-                ])
-                ->with(['users' => fn ($q) => $q->where('task_user.done', true)->select('users.id', 'users.name', 'task_user.completed_at')])
-                ->latest()
-                ->paginate(10),
-            'employees' => User::where('role', 'employee')->orderBy('name')->get(),
+            'tasks'       => $tasks,
+            'viewingTask' => $viewingTask,
+            'employees'   => User::where('role', 'employee')->where('admin_id', auth()->id())->orderBy('name')->get(),
         ];
     }
 }; ?>
@@ -193,6 +239,7 @@ new class extends Component {
                         </div>
 
                         <div class="flex gap-1 shrink-0">
+                            <button wire:click="openView({{ $task->id }})" class="btn btn-ghost btn-xs">View</button>
                             <button wire:click="openEdit({{ $task->id }})" class="btn btn-ghost btn-xs">Edit</button>
                             <button wire:click="confirmDelete({{ $task->id }})" class="btn btn-ghost btn-xs text-error">Delete</button>
                         </div>
@@ -212,6 +259,162 @@ new class extends Component {
         <div class="mt-4">{{ $tasks->links() }}</div>
     @endif
 
+    {{-- View Modal --}}
+    @if($showViewModal && $viewingTask)
+    <div class="modal modal-open">
+        <div class="modal-box max-w-lg">
+            <div class="flex items-start justify-between gap-4 mb-4">
+                <h3 class="font-bold text-lg">{{ $viewingTask->title }}</h3>
+                <button wire:click="closeViewModal" class="btn btn-sm btn-circle btn-ghost">✕</button>
+            </div>
+
+            <div class="text-xs text-base-content/40 mb-4">
+                Created {{ $viewingTask->created_at->format('d M Y, H:i') }}
+            </div>
+
+            {{-- Address --}}
+            @if($viewingTask->address)
+            <div class="mb-4">
+                <p class="text-xs font-semibold text-base-content/50 uppercase tracking-wide mb-1">Address</p>
+                <p class="text-sm text-base-content/80 whitespace-pre-wrap">{{ $viewingTask->address }}</p>
+            </div>
+            @endif
+
+            {{-- Materials --}}
+            @if($viewingTask->materials)
+            <div class="mb-4">
+                <p class="text-xs font-semibold text-base-content/50 uppercase tracking-wide mb-1">Materials</p>
+                <p class="text-sm text-base-content/80 whitespace-pre-wrap">{{ $viewingTask->materials }}</p>
+            </div>
+            @endif
+
+            {{-- Description --}}
+            <div class="mb-4">
+                <p class="text-xs font-semibold text-base-content/50 uppercase tracking-wide mb-1">Description</p>
+                @if($viewingTask->description)
+                    <p class="text-sm text-base-content/80 whitespace-pre-wrap">{{ $viewingTask->description }}</p>
+                @else
+                    <p class="text-sm text-base-content/40 italic">No description provided.</p>
+                @endif
+            </div>
+
+            {{-- Employees --}}
+            @if($viewingTask->users->isNotEmpty())
+            <div class="mb-4">
+                <p class="text-xs font-semibold text-base-content/50 uppercase tracking-wide mb-2">Assigned Employees</p>
+                <div class="space-y-1">
+                    @foreach($viewingTask->users as $user)
+                        <div class="flex items-center justify-between text-sm bg-base-200 px-3 py-1.5 rounded-lg">
+                            <span>{{ $user->name }}</span>
+                            @if($user->pivot->done)
+                                <span class="badge badge-success badge-sm">
+                                    Done · {{ \Carbon\Carbon::parse($user->pivot->completed_at)->format('d M') }}
+                                </span>
+                            @else
+                                <span class="badge badge-ghost badge-sm">Pending</span>
+                            @endif
+                        </div>
+                    @endforeach
+                </div>
+            </div>
+            @endif
+
+            {{-- Attachments --}}
+            <div class="mb-4" x-data="{
+                lightbox: null,
+                scale: 1, tx: 0, ty: 0,
+                dragging: false, ox: 0, oy: 0,
+                open(url) { this.lightbox = url; this.scale = 1; this.tx = 0; this.ty = 0; },
+                close() { this.lightbox = null; },
+                zoom(e) {
+                    e.preventDefault();
+                    const factor = e.deltaY < 0 ? 1.15 : 0.87;
+                    this.scale = Math.max(1, Math.min(12, this.scale * factor));
+                    if (this.scale === 1) { this.tx = 0; this.ty = 0; }
+                },
+                grab(e) { if (this.scale > 1) { this.dragging = true; this.ox = e.clientX - this.tx; this.oy = e.clientY - this.ty; } },
+                pan(e) { if (this.dragging) { this.tx = e.clientX - this.ox; this.ty = e.clientY - this.oy; } },
+                drop() { this.dragging = false; },
+                reset() { this.scale = 1; this.tx = 0; this.ty = 0; }
+            }">
+                <p class="text-xs font-semibold text-base-content/50 uppercase tracking-wide mb-2">Attachments</p>
+                @if(!empty($viewingTask->attachments))
+                    <div class="flex flex-wrap gap-2">
+                        @foreach($viewingTask->attachments as $path)
+                            @php $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION)); @endphp
+                            @if(in_array($ext, ['jpg', 'jpeg']))
+                                @php $url = route('admin.attachments.view', base64_encode($path)); @endphp
+                                <img src="{{ $url }}"
+                                     alt="{{ basename($path) }}"
+                                     class="w-24 h-24 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity border border-base-300"
+                                     @click="open('{{ $url }}')" />
+                            @else
+                                <a href="{{ route('admin.attachments.view', base64_encode($path)) }}"
+                                   target="_blank"
+                                   class="flex items-center gap-2 bg-base-200 px-3 py-2 rounded-lg text-sm link link-primary hover:bg-base-300">
+                                    📄 {{ basename($path) }}
+                                </a>
+                            @endif
+                        @endforeach
+                    </div>
+
+                    {{-- Fullscreen lightbox with zoom & pan --}}
+                    <div x-show="lightbox"
+                         x-transition:enter="transition ease-out duration-150"
+                         x-transition:enter-start="opacity-0"
+                         x-transition:enter-end="opacity-100"
+                         x-transition:leave="transition ease-in duration-100"
+                         x-transition:leave-start="opacity-100"
+                         x-transition:leave-end="opacity-0"
+                         @keydown.escape.window="close()"
+                         @mouseup.window="drop()"
+                         @mousemove.window="pan($event)"
+                         class="fixed inset-0 bg-black z-[200] flex flex-col"
+                         style="display: none;">
+
+                        {{-- Toolbar --}}
+                        <div class="flex items-center justify-between px-4 py-2 bg-black/60 shrink-0 select-none">
+                            <div class="flex items-center gap-2">
+                                <button @click="scale = Math.min(12, scale * 1.3)" class="btn btn-sm btn-ghost text-white">＋ Zoom in</button>
+                                <button @click="scale = Math.max(1, scale / 1.3); if(scale===1){tx=0;ty=0}" class="btn btn-sm btn-ghost text-white">－ Zoom out</button>
+                                <button @click="reset()" class="btn btn-sm btn-ghost text-white">⟳ Reset</button>
+                                <span class="text-white/50 text-xs ml-2" x-text="`${Math.round(scale * 100)}%`"></span>
+                            </div>
+                            <button @click="close()" class="btn btn-sm btn-ghost text-white text-lg leading-none">✕</button>
+                        </div>
+
+                        {{-- Image area --}}
+                        <div class="flex-1 overflow-hidden flex items-center justify-center"
+                             @click="close()"
+                             @wheel.prevent="zoom($event)">
+                            <img :src="lightbox"
+                                 :style="`transform: translate(${tx}px, ${ty}px) scale(${scale}); cursor: ${dragging ? 'grabbing' : scale > 1 ? 'grab' : 'zoom-in'}; transform-origin: center;`"
+                                 class="max-w-full max-h-full object-contain select-none"
+                                 @click.stop
+                                 @mousedown.stop="grab($event)"
+                                 @dblclick.stop="scale === 1 ? (scale = 2) : reset()"
+                                 draggable="false" />
+                        </div>
+
+                        {{-- Hint --}}
+                        <div class="text-center text-white/30 text-xs py-2 shrink-0 select-none">
+                            Scroll to zoom · Drag to pan · Double-click to zoom · ESC to close
+                        </div>
+                    </div>
+                @else
+                    <p class="text-sm text-base-content/40 italic">No attachments.</p>
+                @endif
+            </div>
+
+            <div class="modal-action">
+                <button wire:click="openEdit({{ $viewingTask->id }})" class="btn btn-sm btn-outline">Edit</button>
+                <button wire:click="closeViewModal" class="btn btn-sm btn-primary">Close</button>
+            </div>
+        </div>
+        <div class="modal-backdrop" wire:click="closeViewModal"></div>
+    </div>
+    @endif
+
     {{-- Edit Modal --}}
     @if($showEditModal)
     <div class="modal modal-open">
@@ -219,13 +422,31 @@ new class extends Component {
             <h3 class="font-bold text-lg mb-4">Edit Task</h3>
             <form wire:submit="saveEdit" class="space-y-4">
 
-                {{-- Title --}}
+                {{-- Project --}}
                 <div class="form-control">
-                    <label class="label"><span class="label-text font-medium">Title</span></label>
+                    <label class="label"><span class="label-text font-medium">Project</span></label>
                     <input wire:model="editTitle" type="text"
                            class="input input-bordered @error('editTitle') input-error @enderror"
                            placeholder="Task title" autofocus />
                     @error('editTitle') <label class="label"><span class="label-text-alt text-error">{{ $message }}</span></label> @enderror
+                </div>
+
+                {{-- Address --}}
+                <div class="form-control">
+                    <label class="label"><span class="label-text font-medium">Address</span></label>
+                    <textarea wire:model="editAddress" rows="3"
+                              class="textarea textarea-bordered @error('editAddress') textarea-error @enderror"
+                              placeholder="Site address..."></textarea>
+                    @error('editAddress') <label class="label"><span class="label-text-alt text-error">{{ $message }}</span></label> @enderror
+                </div>
+
+                {{-- Materials --}}
+                <div class="form-control">
+                    <label class="label"><span class="label-text font-medium">Materials</span></label>
+                    <textarea wire:model="editMaterials" rows="3"
+                              class="textarea textarea-bordered @error('editMaterials') textarea-error @enderror"
+                              placeholder="Required materials..."></textarea>
+                    @error('editMaterials') <label class="label"><span class="label-text-alt text-error">{{ $message }}</span></label> @enderror
                 </div>
 
                 {{-- Description --}}
@@ -274,18 +495,50 @@ new class extends Component {
                 @endif
 
                 {{-- New Attachments --}}
-                <div class="form-control">
+                <div class="form-control"
+                     x-data="{
+                         uploading: false,
+                         progress: 0,
+                         handle(e) {
+                             const selected = Array.from(e.target.files);
+                             if (!selected.length) return;
+                             this.uploading = true;
+                             this.progress = 0;
+                             $wire.uploadMultiple('newAttachmentBatch', selected,
+                                 () => { this.uploading = false; $wire.call('addEditBatch'); e.target.value = ''; },
+                                 () => { this.uploading = false; },
+                                 (pct) => { this.progress = pct; }
+                             );
+                         }
+                     }">
                     <label class="label">
                         <span class="label-text font-medium">Add Attachments</span>
-                        <span class="label-text-alt text-base-content/50">JPG / PDF · max 15 MB</span>
+                        <span class="label-text-alt text-base-content/50">JPG / PDF · max 15 MB · można dodawać partiami</span>
                     </label>
-                    <input wire:model="newAttachments" type="file" multiple accept=".jpg,.jpeg,.pdf"
+                    <input type="file" multiple accept=".jpg,.jpeg,.pdf"
+                           @change="handle($event)"
                            class="file-input file-input-bordered file-input-sm w-full @error('newAttachments') file-input-error @enderror" />
-                    <div wire:loading wire:target="newAttachments" class="label">
-                        <span class="label-text-alt text-info">
-                            <span class="loading loading-spinner loading-xs"></span> Uploading...
-                        </span>
+
+                    <div x-show="uploading" class="mt-2">
+                        <div class="flex items-center gap-2 text-sm text-info">
+                            <span class="loading loading-spinner loading-xs"></span>
+                            Uploading... <span x-text="progress + '%'"></span>
+                        </div>
+                        <progress class="progress progress-info w-full mt-1" :value="progress" max="100"></progress>
                     </div>
+
+                    @if(count($newAttachments) > 0)
+                        <ul class="mt-2 space-y-1">
+                            @foreach($newAttachments as $i => $file)
+                                <li class="flex items-center justify-between gap-2 text-xs bg-base-200 px-3 py-1.5 rounded-lg">
+                                    <span class="text-base-content/70 truncate">{{ $file->getClientOriginalName() }}</span>
+                                    <button type="button" wire:click="removeNewAttachment({{ $i }})"
+                                            class="text-error shrink-0 hover:underline">Remove</button>
+                                </li>
+                            @endforeach
+                        </ul>
+                    @endif
+
                     @error('newAttachments.*') <label class="label"><span class="label-text-alt text-error">{{ $message }}</span></label> @enderror
                 </div>
 
