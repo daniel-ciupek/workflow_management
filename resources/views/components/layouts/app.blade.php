@@ -26,19 +26,24 @@
         </div>
 
         <div class="navbar-end gap-2">
-            <span class="text-sm text-base-content/70 hidden sm:inline">
-                {{ auth()->user()->name }}
-                <span class="badge badge-ghost badge-sm ml-1">{{ ucfirst(auth()->user()->role) }}</span>
-            </span>
-
-            @if(auth()->user()->isAdmin())
-                <a href="{{ route('admin.change-pin') }}" class="btn btn-ghost btn-sm">Change PIN</a>
-            @endif
-
-            <form method="POST" action="{{ route('logout') }}">
-                @csrf
-                <button type="submit" class="btn btn-ghost btn-sm text-error">Sign Out</button>
-            </form>
+            @auth
+                <span class="text-sm text-base-content/70 hidden sm:inline">
+                    {{ auth()->user()->name }}
+                    <span class="badge badge-ghost badge-sm ml-1">{{ ucfirst(auth()->user()->role) }}</span>
+                </span>
+                @if(auth()->user()->isAdmin())
+                    <a href="{{ route('admin.change-pin') }}" class="btn btn-ghost btn-sm">Settings</a>
+                @endif
+                <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <button type="submit" class="btn btn-ghost btn-sm text-error">Sign Out</button>
+                </form>
+            @else
+                @if(session('employee_access'))
+                    <span class="text-sm text-base-content/70 hidden sm:inline">Employee View</span>
+                    <a href="{{ route('employee.logout') }}" class="btn btn-ghost btn-sm text-error">Sign Out</a>
+                @endif
+            @endauth
         </div>
     </div>
 

@@ -17,9 +17,14 @@ Route::middleware(['auth', 'isAdmin'])->prefix('admin')->name('admin.')->group(f
     Route::view('tasks/create', 'admin.tasks-create')->name('tasks.create');
 });
 
-// Employee routes
-Route::middleware(['auth', 'isEmployee'])->prefix('employee')->name('employee.')->group(function () {
+// Employee routes — session-based, no auth required
+Route::middleware(['isEmployee'])->prefix('employee')->name('employee.')->group(function () {
     Route::view('dashboard', 'employee.dashboard')->name('dashboard');
 });
+
+Route::get('employee-logout', function () {
+    session()->forget('employee_access');
+    return redirect()->route('login');
+})->name('employee.logout');
 
 require __DIR__.'/auth.php';

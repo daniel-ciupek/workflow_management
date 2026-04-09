@@ -1,15 +1,95 @@
 <?php
 
 use App\Models\Task;
+use App\Models\User;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Livewire\Volt\Component;
+use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 
 new class extends Component {
-    use WithPagination;
+    use WithPagination, WithFileUploads;
 
+    // Delete
     public bool $confirmDelete = false;
     public ?int $deletingId = null;
+
+    // Edit
+    public bool $showEditModal = false;
+    public ?int $editingId = null;
+    public string $editTitle = '';
+    public string $editDescription = '';
+    public array $editSelectedEmployees = [];
+    public array $existingAttachments = [];
+    public array $removedAttachments = [];
+    public $newAttachments = [];
+
+    public function openEdit(int $id): void
+    {
+        $task = Task::with('users')->findOrFail($id);
+        $this->editingId = $id;
+        $this->editTitle = $task->title;
+        $this->editDescription = $task->description ?? '';
+        $this->editSelectedEmployees = $task->users->pluck('id')->map(fn($id) => (string) $id)->toArray();
+        $this->existingAttachments = $task->attachments ?? [];
+        $this->removedAttachments = [];
+        $this->newAttachments = [];
+        $this->resetValidation();
+        $this->showEditModal = true;
+    }
+
+    public function removeExistingAttachment(string $path): void
+    {
+        $this->removedAttachments[] = $path;
+        $this->existingAttachments = array_values(
+            array_filter($this->existingAttachments, fn($p) => $p !== $path)
+        );
+    }
+
+    public function saveEdit(): void
+    {
+        $this->validate([
+            'editTitle'               => 'required|string|max:255',
+            'editDescription'         => 'nullable|string',
+            'editSelectedEmployees'   => 'required|array|min:1',
+            'editSelectedEmployees.*' => ['integer', Rule::exists('users', 'id')->where('role', 'employee')],
+            'newAttachments'          => 'nullable|array',
+            'newAttachments.*'        => 'file|mimes:jpg,jpeg,pdf|max:15360',
+        ]);
+
+        $task = Task::findOrFail($this->editingId);
+
+        // Delete removed attachments from disk
+        foreach ($this->removedAttachments as $path) {
+            Storage::disk('tasks')->delete($path);
+        }
+
+        // Upload new attachments
+        $paths = $this->existingAttachments;
+        foreach ($this->newAttachments as $file) {
+            $paths[] = $file->store("task-{$task->id}", 'tasks');
+        }
+
+        $task->update([
+            'title'       => $this->editTitle,
+            'description' => $this->editDescription,
+            'attachments' => empty($paths) ? null : array_values($paths),
+        ]);
+
+        $task->users()->sync($this->editSelectedEmployees);
+
+        $this->showEditModal = false;
+        $this->editingId = null;
+    }
+
+    public function closeEditModal(): void
+    {
+        $this->showEditModal = false;
+        $this->editingId = null;
+        $this->newAttachments = [];
+        $this->resetValidation();
+    }
 
     public function confirmDelete(int $id): void
     {
@@ -21,18 +101,7 @@ new class extends Component {
     {
         if (!$this->deletingId) return;
 
-        $task = Task::findOrFail($this->deletingId);
-
-        // Remove attachments from storage
-        if (!empty($task->attachments)) {
-            foreach ($task->attachments as $path) {
-                Storage::disk('tasks')->delete($path);
-            }
-            // Remove task directory if empty
-            Storage::disk('tasks')->deleteDirectory("task-{$task->id}");
-        }
-
-        $task->delete();
+        Task::findOrFail($this->deletingId)->delete();
 
         $this->confirmDelete = false;
         $this->deletingId = null;
@@ -55,6 +124,7 @@ new class extends Component {
                 ->with(['users' => fn ($q) => $q->where('task_user.done', true)->select('users.id', 'users.name', 'task_user.completed_at')])
                 ->latest()
                 ->paginate(10),
+            'employees' => User::where('role', 'employee')->orderBy('name')->get(),
         ];
     }
 }; ?>
@@ -122,7 +192,10 @@ new class extends Component {
                             @endif
                         </div>
 
-                        <button wire:click="confirmDelete({{ $task->id }})" class="btn btn-ghost btn-sm text-error shrink-0">Delete</button>
+                        <div class="flex gap-1 shrink-0">
+                            <button wire:click="openEdit({{ $task->id }})" class="btn btn-ghost btn-xs">Edit</button>
+                            <button wire:click="confirmDelete({{ $task->id }})" class="btn btn-ghost btn-xs text-error">Delete</button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -137,6 +210,96 @@ new class extends Component {
 
     @if($tasks->hasPages())
         <div class="mt-4">{{ $tasks->links() }}</div>
+    @endif
+
+    {{-- Edit Modal --}}
+    @if($showEditModal)
+    <div class="modal modal-open">
+        <div class="modal-box max-w-lg">
+            <h3 class="font-bold text-lg mb-4">Edit Task</h3>
+            <form wire:submit="saveEdit" class="space-y-4">
+
+                {{-- Title --}}
+                <div class="form-control">
+                    <label class="label"><span class="label-text font-medium">Title</span></label>
+                    <input wire:model="editTitle" type="text"
+                           class="input input-bordered @error('editTitle') input-error @enderror"
+                           placeholder="Task title" autofocus />
+                    @error('editTitle') <label class="label"><span class="label-text-alt text-error">{{ $message }}</span></label> @enderror
+                </div>
+
+                {{-- Description --}}
+                <div class="form-control">
+                    <label class="label"><span class="label-text font-medium">Description</span></label>
+                    <textarea wire:model="editDescription" rows="3"
+                              class="textarea textarea-bordered @error('editDescription') textarea-error @enderror"
+                              placeholder="Optional description..."></textarea>
+                    @error('editDescription') <label class="label"><span class="label-text-alt text-error">{{ $message }}</span></label> @enderror
+                </div>
+
+                {{-- Employees --}}
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-medium">Assign to Employees</span>
+                        <span class="label-text-alt text-base-content/50">{{ count($editSelectedEmployees) }} selected</span>
+                    </label>
+                    <div class="border border-base-300 rounded-box p-3 max-h-40 overflow-y-auto space-y-1">
+                        @forelse($employees as $employee)
+                            <label class="flex items-center gap-3 cursor-pointer hover:bg-base-200 px-2 py-1.5 rounded-lg">
+                                <input type="checkbox" wire:model="editSelectedEmployees" value="{{ $employee->id }}"
+                                       class="checkbox checkbox-primary checkbox-sm" />
+                                <span class="text-sm">{{ $employee->name }}</span>
+                            </label>
+                        @empty
+                            <p class="text-sm text-base-content/50 text-center py-2">No employees found.</p>
+                        @endforelse
+                    </div>
+                    @error('editSelectedEmployees') <label class="label"><span class="label-text-alt text-error">{{ $message }}</span></label> @enderror
+                </div>
+
+                {{-- Existing Attachments --}}
+                @if(!empty($existingAttachments))
+                    <div class="form-control">
+                        <label class="label"><span class="label-text font-medium">Current Attachments</span></label>
+                        <ul class="space-y-1">
+                            @foreach($existingAttachments as $path)
+                                <li class="flex items-center justify-between gap-2 text-sm bg-base-200 px-3 py-1.5 rounded-lg">
+                                    <span class="truncate text-base-content/70 font-mono">{{ basename($path) }}</span>
+                                    <button type="button" wire:click="removeExistingAttachment('{{ $path }}')"
+                                            class="text-error hover:text-error shrink-0 text-xs">Remove</button>
+                                </li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+
+                {{-- New Attachments --}}
+                <div class="form-control">
+                    <label class="label">
+                        <span class="label-text font-medium">Add Attachments</span>
+                        <span class="label-text-alt text-base-content/50">JPG / PDF · max 15 MB</span>
+                    </label>
+                    <input wire:model="newAttachments" type="file" multiple accept=".jpg,.jpeg,.pdf"
+                           class="file-input file-input-bordered file-input-sm w-full @error('newAttachments') file-input-error @enderror" />
+                    <div wire:loading wire:target="newAttachments" class="label">
+                        <span class="label-text-alt text-info">
+                            <span class="loading loading-spinner loading-xs"></span> Uploading...
+                        </span>
+                    </div>
+                    @error('newAttachments.*') <label class="label"><span class="label-text-alt text-error">{{ $message }}</span></label> @enderror
+                </div>
+
+                <div class="modal-action">
+                    <button type="button" wire:click="closeEditModal" class="btn btn-ghost">Cancel</button>
+                    <button type="submit" class="btn btn-primary" wire:loading.attr="disabled" wire:target="saveEdit">
+                        <span wire:loading.remove wire:target="saveEdit">Save Changes</span>
+                        <span wire:loading wire:target="saveEdit"><span class="loading loading-spinner loading-sm"></span></span>
+                    </button>
+                </div>
+            </form>
+        </div>
+        <div class="modal-backdrop" wire:click="closeEditModal"></div>
+    </div>
     @endif
 
     {{-- Confirm Delete --}}
