@@ -16,7 +16,7 @@ new class extends Component {
     public ?int $viewingId = null;
 
     // Delete
-    public bool $confirmDelete = false;
+    public bool $showDeleteModal = false;
     public ?int $deletingId = null;
 
     // Edit
@@ -132,7 +132,7 @@ new class extends Component {
     public function confirmDelete(int $id): void
     {
         $this->deletingId = $id;
-        $this->confirmDelete = true;
+        $this->showDeleteModal = true;
     }
 
     public function destroy(): void
@@ -141,36 +141,36 @@ new class extends Component {
 
         Task::findOrFail($this->deletingId)->delete();
 
-        $this->confirmDelete = false;
+        $this->showDeleteModal = false;
         $this->deletingId = null;
         $this->resetPage();
     }
 
     public function closeModal(): void
     {
-        $this->confirmDelete = false;
+        $this->showDeleteModal = false;
         $this->deletingId = null;
     }
 
     public function with(): array
     {
-        $tasks = Task::withCount([
-                'users',
-                'users as done_count' => fn ($q) => $q->where('task_user.done', true),
-            ])
-            ->with(['users' => fn ($q) => $q->withPivot('done', 'completed_at')->select('users.id', 'users.name')])
+        $tasks = Task::withCount('users')
+            ->with(['users' => fn ($q) => $q->select('users.id', 'users.name')])
+            ->active()
             ->where('created_by', auth()->id())
             ->latest()
             ->paginate(10);
 
         $viewingTask = $this->viewingId
-            ? Task::with(['users' => fn ($q) => $q->withPivot('done', 'completed_at')->select('users.id', 'users.name')])->find($this->viewingId)
+            ? Task::with(['users' => fn ($q) => $q->select('users.id', 'users.name')])->find($this->viewingId)
             : null;
 
         return [
             'tasks'       => $tasks,
             'viewingTask' => $viewingTask,
-            'employees'   => User::where('role', 'employee')->where('admin_id', auth()->id())->orderBy('name')->get(),
+            'employees'   => auth()->user()->isSuperAdmin()
+                ? User::where('role', 'employee')->orderBy('name')->get()
+                : auth()->user()->employees()->orderBy('name')->get(),
         ];
     }
 }; ?>
@@ -193,15 +193,7 @@ new class extends Component {
                 <div class="card-body">
                     <div class="flex items-start justify-between gap-4">
                         <div class="flex-1 min-w-0">
-                            <div class="flex items-center gap-2 flex-wrap">
-                                <h3 class="font-semibold text-lg">{{ $task->title }}</h3>
-                                <span class="badge badge-ghost badge-sm">
-                                    {{ $task->done_count }} / {{ $task->users_count }} done
-                                </span>
-                                @if($task->users_count > 0 && $task->done_count === $task->users_count)
-                                    <span class="badge badge-success badge-sm">Completed</span>
-                                @endif
-                            </div>
+                            <h3 class="font-semibold text-lg">{{ $task->title }}</h3>
 
                             @if($task->description)
                                 <p class="text-sm text-base-content/60 mt-1 line-clamp-2">{{ $task->description }}</p>
@@ -214,25 +206,10 @@ new class extends Component {
                                 @endif
                             </div>
 
-                            {{-- Progress bar --}}
-                            @if($task->users_count > 0)
-                                <div class="mt-3">
-                                    <progress class="progress progress-success w-full max-w-xs"
-                                              value="{{ $task->done_count }}"
-                                              max="{{ $task->users_count }}"></progress>
-                                </div>
-                            @endif
-
-                            {{-- Who completed --}}
                             @if($task->users->isNotEmpty())
                                 <div class="flex flex-wrap gap-1 mt-2">
                                     @foreach($task->users as $user)
-                                        <span class="badge badge-outline badge-sm text-success">
-                                            {{ $user->name }}
-                                            @if($user->pivot->completed_at)
-                                                · {{ \Carbon\Carbon::parse($user->pivot->completed_at)->format('d M') }}
-                                            @endif
-                                        </span>
+                                        <span class="badge badge-ghost badge-sm">{{ $user->name }}</span>
                                     @endforeach
                                 </div>
                             @endif
@@ -262,7 +239,7 @@ new class extends Component {
     {{-- View Modal --}}
     @if($showViewModal && $viewingTask)
     <div class="modal modal-open">
-        <div class="modal-box max-w-lg">
+        <div class="modal-box w-11/12 max-w-lg">
             <div class="flex items-start justify-between gap-4 mb-4">
                 <h3 class="font-bold text-lg">{{ $viewingTask->title }}</h3>
                 <button wire:click="closeViewModal" class="btn btn-sm btn-circle btn-ghost">✕</button>
@@ -302,18 +279,9 @@ new class extends Component {
             @if($viewingTask->users->isNotEmpty())
             <div class="mb-4">
                 <p class="text-xs font-semibold text-base-content/50 uppercase tracking-wide mb-2">Assigned Employees</p>
-                <div class="space-y-1">
+                <div class="flex flex-wrap gap-1">
                     @foreach($viewingTask->users as $user)
-                        <div class="flex items-center justify-between text-sm bg-base-200 px-3 py-1.5 rounded-lg">
-                            <span>{{ $user->name }}</span>
-                            @if($user->pivot->done)
-                                <span class="badge badge-success badge-sm">
-                                    Done · {{ \Carbon\Carbon::parse($user->pivot->completed_at)->format('d M') }}
-                                </span>
-                            @else
-                                <span class="badge badge-ghost badge-sm">Pending</span>
-                            @endif
-                        </div>
+                        <span class="badge badge-ghost badge-sm">{{ $user->name }}</span>
                     @endforeach
                 </div>
             </div>
@@ -418,7 +386,7 @@ new class extends Component {
     {{-- Edit Modal --}}
     @if($showEditModal)
     <div class="modal modal-open">
-        <div class="modal-box max-w-lg">
+        <div class="modal-box w-11/12 max-w-lg">
             <h3 class="font-bold text-lg mb-4">Edit Task</h3>
             <form wire:submit="saveEdit" class="space-y-4">
 
@@ -556,14 +524,14 @@ new class extends Component {
     @endif
 
     {{-- Confirm Delete --}}
-    @if($confirmDelete)
+    @if($showDeleteModal)
     <div class="modal modal-open">
-        <div class="modal-box">
+        <div class="modal-box w-11/12 max-w-lg">
             <h3 class="font-bold text-lg">Delete Task</h3>
             <p class="py-4 text-base-content/70">This will permanently delete the task and all its attachments. Employees will lose access to it.</p>
             <div class="modal-action">
-                <button wire:click="closeModal" class="btn btn-ghost">Cancel</button>
-                <button wire:click="destroy" class="btn btn-error" wire:loading.attr="disabled">Delete</button>
+                <button type="button" wire:click="closeModal" class="btn btn-ghost">Cancel</button>
+                <button type="button" wire:click="destroy" class="btn btn-error" wire:loading.attr="disabled">Delete</button>
             </div>
         </div>
         <div class="modal-backdrop" wire:click="closeModal"></div>

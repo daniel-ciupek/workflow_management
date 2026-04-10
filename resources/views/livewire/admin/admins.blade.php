@@ -8,7 +8,7 @@ new class extends Component {
     use WithPagination;
 
     public bool $showModal = false;
-    public bool $confirmDelete = false;
+    public bool $showDeleteModal = false;
     public ?int $editingId = null;
     public ?int $deletingId = null;
 
@@ -75,7 +75,7 @@ new class extends Component {
         abort_unless(auth()->user()->isSuperAdmin(), 403);
         if ($id === auth()->id()) return;
         $this->deletingId = $id;
-        $this->confirmDelete = true;
+        $this->showDeleteModal = true;
     }
 
     public function destroy(): void
@@ -84,7 +84,7 @@ new class extends Component {
         if ($this->deletingId && $this->deletingId !== auth()->id()) {
             User::findOrFail($this->deletingId)->delete();
         }
-        $this->confirmDelete = false;
+        $this->showDeleteModal = false;
         $this->deletingId = null;
         $this->resetPage();
     }
@@ -92,7 +92,7 @@ new class extends Component {
     public function closeModals(): void
     {
         $this->showModal = false;
-        $this->confirmDelete = false;
+        $this->showDeleteModal = false;
         $this->resetForm();
     }
 
@@ -162,7 +162,7 @@ new class extends Component {
     {{-- Create / Edit Modal --}}
     @if($showModal)
     <div class="modal modal-open">
-        <div class="modal-box">
+        <div class="modal-box w-11/12 max-w-lg">
             <h3 class="font-bold text-lg mb-4">{{ $editingId ? 'Edit Administrator' : 'New Administrator' }}</h3>
             <form wire:submit="save" class="space-y-4">
 
@@ -209,14 +209,14 @@ new class extends Component {
     @endif
 
     {{-- Confirm Delete --}}
-    @if($confirmDelete)
+    @if($showDeleteModal)
     <div class="modal modal-open">
-        <div class="modal-box">
+        <div class="modal-box w-11/12 max-w-lg">
             <h3 class="font-bold text-lg">Delete Administrator</h3>
             <p class="py-4 text-base-content/70">This action cannot be undone. The administrator's tasks will remain in the system.</p>
             <div class="modal-action">
-                <button wire:click="closeModals" class="btn btn-ghost">Cancel</button>
-                <button wire:click="destroy" class="btn btn-error" wire:loading.attr="disabled">Delete</button>
+                <button type="button" wire:click="closeModals" class="btn btn-ghost">Cancel</button>
+                <button type="button" wire:click="destroy" class="btn btn-error" wire:loading.attr="disabled">Delete</button>
             </div>
         </div>
         <div class="modal-backdrop" wire:click="closeModals"></div>

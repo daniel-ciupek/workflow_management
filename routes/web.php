@@ -16,6 +16,7 @@ Route::middleware(['auth', 'isAdmin'])->prefix('admin')->name('admin.')->group(f
     // Tasks
     Route::view('tasks', 'admin.tasks')->name('tasks');
     Route::view('tasks/create', 'admin.tasks-create')->name('tasks.create');
+    Route::view('tasks/history', 'admin.task-history')->name('tasks.history');
 
     // Admins management
     Route::view('admins', 'admin.admins')->name('admins');
@@ -36,6 +37,7 @@ Route::middleware(['auth', 'isAdmin'])->prefix('admin')->name('admin.')->group(f
 // Employee routes — session-based, no auth required
 Route::middleware(['isEmployee'])->prefix('employee')->name('employee.')->group(function () {
     Route::view('dashboard', 'employee.dashboard')->name('dashboard');
+    Route::view('history', 'employee.task-history')->name('history');
 
     // Attachment view (inline for images, download for PDF)
     Route::get('attachments/{path}', function (string $path) {

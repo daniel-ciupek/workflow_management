@@ -69,12 +69,11 @@ new class extends Component {
 
     public function with(): array
     {
-        return [
-            'employees' => User::where('role', 'employee')
-                ->where('admin_id', auth()->id())
-                ->orderBy('name')
-                ->get(),
-        ];
+        $employees = auth()->user()->isSuperAdmin()
+            ? User::where('role', 'employee')->orderBy('name')->get()
+            : auth()->user()->employees()->orderBy('name')->get();
+
+        return compact('employees');
     }
 }; ?>
 
@@ -84,7 +83,7 @@ new class extends Component {
         <a href="{{ route('admin.tasks') }}" class="btn btn-ghost btn-sm">← Back</a>
     </div>
 
-    <div class="card bg-base-100 shadow max-w-2xl">
+    <div class="card bg-base-100 shadow w-full max-w-2xl">
         <div class="card-body space-y-5">
             <form wire:submit="save" class="space-y-5">
 
