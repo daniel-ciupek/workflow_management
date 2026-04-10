@@ -16,7 +16,7 @@ new class extends Component {
     public ?int $viewingId = null;
 
     // Delete
-    public bool $confirmDelete = false;
+    public bool $showDeleteModal = false;
     public ?int $deletingId = null;
 
     // Edit
@@ -132,7 +132,7 @@ new class extends Component {
     public function confirmDelete(int $id): void
     {
         $this->deletingId = $id;
-        $this->confirmDelete = true;
+        $this->showDeleteModal = true;
     }
 
     public function destroy(): void
@@ -141,14 +141,14 @@ new class extends Component {
 
         Task::findOrFail($this->deletingId)->delete();
 
-        $this->confirmDelete = false;
+        $this->showDeleteModal = false;
         $this->deletingId = null;
         $this->resetPage();
     }
 
     public function closeModal(): void
     {
-        $this->confirmDelete = false;
+        $this->showDeleteModal = false;
         $this->deletingId = null;
     }
 
@@ -170,7 +170,9 @@ new class extends Component {
         return [
             'tasks'       => $tasks,
             'viewingTask' => $viewingTask,
-            'employees'   => User::where('role', 'employee')->where('admin_id', auth()->id())->orderBy('name')->get(),
+            'employees'   => auth()->user()->isSuperAdmin()
+                ? User::where('role', 'employee')->orderBy('name')->get()
+                : auth()->user()->employees()->orderBy('name')->get(),
         ];
     }
 }; ?>
@@ -556,14 +558,14 @@ new class extends Component {
     @endif
 
     {{-- Confirm Delete --}}
-    @if($confirmDelete)
+    @if($showDeleteModal)
     <div class="modal modal-open">
         <div class="modal-box">
             <h3 class="font-bold text-lg">Delete Task</h3>
             <p class="py-4 text-base-content/70">This will permanently delete the task and all its attachments. Employees will lose access to it.</p>
             <div class="modal-action">
-                <button wire:click="closeModal" class="btn btn-ghost">Cancel</button>
-                <button wire:click="destroy" class="btn btn-error" wire:loading.attr="disabled">Delete</button>
+                <button type="button" wire:click="closeModal" class="btn btn-ghost">Cancel</button>
+                <button type="button" wire:click="destroy" class="btn btn-error" wire:loading.attr="disabled">Delete</button>
             </div>
         </div>
         <div class="modal-backdrop" wire:click="closeModal"></div>

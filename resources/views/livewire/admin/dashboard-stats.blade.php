@@ -9,18 +9,13 @@ new class extends Component {
     public function with(): array
     {
         $adminId       = auth()->id();
-        $employeeCount = User::where('role', 'employee')->where('admin_id', $adminId)->count();
-        $taskCount     = Task::where('created_by', $adminId)->count();
-        $doneCount     = Task::withCount([
-                'users',
-                'users as done_count' => fn ($q) => $q->where('task_user.done', true),
-            ])
-            ->where('created_by', $adminId)
-            ->get()
-            ->filter(fn ($t) => $t->users_count > 0 && $t->done_count === $t->users_count)
-            ->count();
+        $employeeCount = auth()->user()->isSuperAdmin()
+            ? User::where('role', 'employee')->count()
+            : auth()->user()->employees()->count();
+        // employees() uses admin_employee pivot — consistent with the employees list page
+        $taskCount = Task::where('created_by', $adminId)->count();
 
-        return compact('employeeCount', 'taskCount', 'doneCount');
+        return compact('employeeCount', 'taskCount');
     }
 }; ?>
 
@@ -38,12 +33,6 @@ new class extends Component {
                 <p class="text-4xl font-bold text-primary">{{ $taskCount }}</p>
             </div>
         </a>
-        <div class="card bg-base-100 shadow">
-            <div class="card-body">
-                <h3 class="card-title text-sm text-base-content/60">Fully Completed</h3>
-                <p class="text-4xl font-bold text-success">{{ $doneCount }}</p>
-            </div>
-        </div>
     </div>
 
     <div class="flex gap-3">

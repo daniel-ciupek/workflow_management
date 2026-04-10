@@ -15,7 +15,6 @@ class User extends Authenticatable
         'pin',
         'role',
         'is_super',
-        'admin_id',
     ];
 
     protected $hidden = [
@@ -25,7 +24,8 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'role' => 'string',
+            'role'     => 'string',
+            'is_super' => 'boolean',
         ];
     }
 
@@ -42,6 +42,18 @@ class User extends Authenticatable
     public function isEmployee(): bool
     {
         return $this->role === 'employee';
+    }
+
+    // Employee → their admins
+    public function admins(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'admin_employee', 'employee_id', 'admin_id');
+    }
+
+    // Admin → their employees
+    public function employees(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'admin_employee', 'admin_id', 'employee_id');
     }
 
     public function tasks(): BelongsToMany

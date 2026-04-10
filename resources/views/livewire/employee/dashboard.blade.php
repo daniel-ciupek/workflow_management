@@ -59,30 +59,26 @@ new class extends Component {
     </div>
 
     @if($tasks->isEmpty())
-        <div class="card bg-base-100 shadow">
-            <div class="card-body text-center text-base-content/50 py-12">
-                No tasks available.
-            </div>
+        <div class="card bg-base-100 shadow text-center text-base-content/50 py-12">
+            No tasks available.
         </div>
     @else
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             @foreach($tasks as $task)
-                <div class="card bg-base-100 shadow cursor-pointer hover:shadow-md transition-shadow"
+                <div class="card bg-base-100 shadow cursor-pointer hover:shadow-md transition-shadow p-5"
                      wire:click="openView({{ $task->id }})">
-                    <div class="card-body">
-                        <h3 class="card-title text-base">{{ $task->title }}</h3>
-                        <p class="text-xs text-base-content/50 mt-1">
-                            Added {{ $task->created_at->format('d M Y') }}
-                        </p>
-                        @if($task->users->isNotEmpty())
-                            <div class="flex flex-wrap gap-1 mt-3">
-                                @foreach($task->users as $user)
-                                    <span class="badge badge-ghost badge-sm">{{ $user->name }}</span>
-                                @endforeach
-                            </div>
-                        @endif
-                        <p class="text-xs text-primary mt-2">Tap to view details →</p>
-                    </div>
+                    <h3 class="font-semibold text-base">{{ $task->title }}</h3>
+                    <p class="text-xs text-base-content/50 mt-1">
+                        Added {{ $task->created_at->format('d M Y') }}
+                    </p>
+                    @if($task->users->isNotEmpty())
+                        <div class="flex flex-wrap gap-1 mt-3">
+                            @foreach($task->users as $user)
+                                <span class="badge badge-ghost badge-sm">{{ $user->name }}</span>
+                            @endforeach
+                        </div>
+                    @endif
+                    <p class="text-xs text-primary mt-2">Tap to view details →</p>
                 </div>
             @endforeach
         </div>
