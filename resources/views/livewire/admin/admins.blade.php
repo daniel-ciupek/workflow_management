@@ -162,7 +162,7 @@ new class extends Component {
     {{-- Create / Edit Modal --}}
     @if($showModal)
     <div class="modal modal-open">
-        <div class="modal-box">
+        <div class="modal-box w-11/12 max-w-lg">
             <h3 class="font-bold text-lg mb-4">{{ $editingId ? 'Edit Administrator' : 'New Administrator' }}</h3>
             <form wire:submit="save" class="space-y-4">
 
@@ -211,7 +211,7 @@ new class extends Component {
     {{-- Confirm Delete --}}
     @if($showDeleteModal)
     <div class="modal modal-open">
-        <div class="modal-box">
+        <div class="modal-box w-11/12 max-w-lg">
             <h3 class="font-bold text-lg">Delete Administrator</h3>
             <p class="py-4 text-base-content/70">This action cannot be undone. The administrator's tasks will remain in the system.</p>
             <div class="modal-action">
