@@ -41,7 +41,7 @@ RUN composer install --optimize-autoloader --no-interaction --no-scripts
 RUN npm ci && npm run build
 
 # Set permissions
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/vendor
 
 EXPOSE 9000
 CMD ["php-fpm"]
