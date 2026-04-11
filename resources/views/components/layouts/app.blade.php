@@ -25,7 +25,7 @@
 
             @auth
                 @if(auth()->user()->isAdmin())
-                    <div class="navbar-center hidden md:flex">
+                    <div class="hidden md:flex flex-1 justify-center">
                         <nav class="flex gap-1">
                             <a href="{{ route('admin.dashboard') }}" class="btn btn-ghost btn-sm {{ request()->routeIs('admin.dashboard') ? 'btn-active' : '' }}">Dashboard</a>
                             <a href="{{ route('admin.employees') }}" class="btn btn-ghost btn-sm {{ request()->routeIs('admin.employees') ? 'btn-active' : '' }}">Employees</a>
@@ -60,14 +60,41 @@
                     </form>
                 @else
                     @if(session('employee_access'))
-                        <span class="text-sm text-base-content/70 hidden sm:inline">Employee View</span>
-                        <a href="{{ route('employee.dashboard') }}" class="btn btn-ghost btn-sm {{ request()->routeIs('employee.dashboard') ? 'btn-active' : '' }}">Tasks</a>
-                        <a href="{{ route('employee.history') }}" class="btn btn-ghost btn-sm {{ request()->routeIs('employee.history') ? 'btn-active' : '' }}">History</a>
+                        {{-- Desktop: inline links --}}
+                        <nav class="hidden md:flex gap-1">
+                            <a href="{{ route('employee.dashboard') }}" class="btn btn-ghost btn-sm {{ request()->routeIs('employee.dashboard') ? 'btn-active' : '' }}">Tasks</a>
+                            <a href="{{ route('employee.history') }}" class="btn btn-ghost btn-sm {{ request()->routeIs('employee.history') ? 'btn-active' : '' }}">History</a>
+                        </nav>
+                        {{-- Mobile: hamburger --}}
+                        <button @click="open = !open" class="btn btn-ghost btn-sm md:hidden">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path x-show="!open" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                                <path x-show="open" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </button>
+                        {{-- Sign Out always visible --}}
                         <a href="{{ route('employee.logout') }}" class="btn btn-ghost btn-sm text-error">Sign Out</a>
                     @endif
                 @endauth
             </div>
         </div>
+
+        {{-- Mobile menu (employee) --}}
+        @if(session('employee_access') && !auth()->check())
+            <div x-show="open"
+                 x-transition:enter="transition ease-out duration-150"
+                 x-transition:enter-start="opacity-0 -translate-y-2"
+                 x-transition:enter-end="opacity-100 translate-y-0"
+                 x-transition:leave="transition ease-in duration-100"
+                 x-transition:leave-start="opacity-100 translate-y-0"
+                 x-transition:leave-end="opacity-0 -translate-y-2"
+                 @click.outside="open = false"
+                 class="md:hidden bg-base-100 border-t border-base-200 shadow-md px-4 py-3 flex flex-col gap-1"
+                 style="display: none;">
+                <a href="{{ route('employee.dashboard') }}" @click="open = false" class="btn btn-ghost btn-sm justify-start {{ request()->routeIs('employee.dashboard') ? 'btn-active' : '' }}">Tasks</a>
+                <a href="{{ route('employee.history') }}" @click="open = false" class="btn btn-ghost btn-sm justify-start {{ request()->routeIs('employee.history') ? 'btn-active' : '' }}">History</a>
+            </div>
+        @endif
 
         {{-- Mobile menu (admin only) --}}
         @auth
