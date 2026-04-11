@@ -152,13 +152,13 @@ new class extends Component {
                              $wire.uploadMultiple('attachmentBatch', selected,
                                  () => { this.uploading = false; $wire.call('addBatch'); e.target.value = ''; },
                                  () => { this.uploading = false; },
-                                 (pct) => { this.progress = pct; }
+                                 (pct) => { this.progress = isFinite(pct) ? pct : 0; }
                              );
                          }
                      }">
                     <label class="label">
                         <span class="label-text font-medium">Attachments</span>
-                        <span class="label-text-alt text-base-content/50">JPG / PDF · max 15 MB · można dodawać partiami</span>
+                        <span class="label-text-alt text-base-content/50">JPG / PDF · max 15 MB · multiple batches allowed</span>
                     </label>
                     <input type="file" multiple accept=".jpg,.jpeg,.pdf"
                            @change="handle($event)"
