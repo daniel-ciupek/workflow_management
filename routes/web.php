@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Storage;
 Route::get('/', fn () => redirect()->route('login'));
 
 // Admin routes
-Route::middleware(['auth', 'isAdmin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['isAdmin'])->prefix('admin')->name('admin.')->group(function () {
     Route::view('dashboard', 'admin.dashboard')->name('dashboard');
     Route::view('change-pin', 'admin.change-pin')->name('change-pin');
 
