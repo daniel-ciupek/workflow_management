@@ -13,17 +13,20 @@
 
     <div x-data="{ open: false }" class="sticky top-0 z-50">
         <div class="navbar bg-base-100 shadow-sm px-4">
-            <div class="navbar-start gap-4">
+            <div class="navbar-start">
                 @if(auth()->check() && auth()->user()->isAdmin())
-                    <a href="{{ route('admin.dashboard') }}" class="text-lg font-bold text-primary hover:opacity-80 transition-opacity">Workflow Management</a>
+                    <a href="{{ route('admin.dashboard') }}" class="text-lg font-bold text-primary hover:opacity-80 transition-opacity whitespace-nowrap">Workflow Management</a>
                 @elseif(session('employee_access'))
-                    <a href="{{ route('employee.dashboard') }}" class="text-lg font-bold text-primary hover:opacity-80 transition-opacity">Workflow Management</a>
+                    <a href="{{ route('employee.dashboard') }}" class="text-lg font-bold text-primary hover:opacity-80 transition-opacity whitespace-nowrap">Workflow Management</a>
                 @else
-                    <span class="text-lg font-bold text-primary">Workflow Management</span>
+                    <span class="text-lg font-bold text-primary whitespace-nowrap">Workflow Management</span>
                 @endif
-                @auth
-                    @if(auth()->user()->isAdmin())
-                        <nav class="hidden md:flex gap-1">
+            </div>
+
+            @auth
+                @if(auth()->user()->isAdmin())
+                    <div class="navbar-center hidden md:flex">
+                        <nav class="flex gap-1">
                             <a href="{{ route('admin.dashboard') }}" class="btn btn-ghost btn-sm {{ request()->routeIs('admin.dashboard') ? 'btn-active' : '' }}">Dashboard</a>
                             <a href="{{ route('admin.employees') }}" class="btn btn-ghost btn-sm {{ request()->routeIs('admin.employees') ? 'btn-active' : '' }}">Employees</a>
                             <a href="{{ route('admin.tasks') }}" class="btn btn-ghost btn-sm {{ request()->routeIs('admin.tasks') || request()->routeIs('admin.tasks.create') ? 'btn-active' : '' }}">Tasks</a>
@@ -32,9 +35,9 @@
                                 <a href="{{ route('admin.admins') }}" class="btn btn-ghost btn-sm {{ request()->routeIs('admin.admins') ? 'btn-active' : '' }}">Admins</a>
                             @endif
                         </nav>
-                    @endif
-                @endauth
-            </div>
+                    </div>
+                @endif
+            @endauth
 
             <div class="navbar-end gap-2">
                 @auth
