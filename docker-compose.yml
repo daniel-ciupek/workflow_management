@@ -8,7 +8,7 @@ services:
       - /var/www/html/vendor
       - /var/www/html/node_modules
     environment:
-      - APP_ENV=${APP_ENV:-production}  # override via .env: APP_ENV=production
+      - APP_ENV=${APP_ENV:-local}  # production server: set APP_ENV=production in .env
     depends_on:
       postgres:
         condition: service_healthy
@@ -53,7 +53,7 @@ services:
       - /var/www/html/vendor
       - /var/www/html/node_modules
     environment:
-      - APP_ENV=${APP_ENV:-production}  # override via .env: APP_ENV=production
+      - APP_ENV=${APP_ENV:-local}  # production server: set APP_ENV=production in .env
     depends_on:
       postgres:
         condition: service_healthy
