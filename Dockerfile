@@ -1,5 +1,8 @@
 FROM php:8.4-fpm-alpine
 
+# Upgrade all Alpine packages to get latest security patches
+RUN apk upgrade --no-cache
+
 # Install system dependencies
 RUN apk add --no-cache \
     libpng-dev \
@@ -8,7 +11,6 @@ RUN apk add --no-cache \
     libzip-dev \
     postgresql-dev \
     zip \
-    unzip \
     oniguruma-dev \
     nodejs \
     npm \

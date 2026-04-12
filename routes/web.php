@@ -6,7 +6,7 @@ use Illuminate\Support\Facades\Storage;
 Route::get('/', fn () => redirect()->route('login'));
 
 // Admin routes
-Route::middleware(['auth', 'isAdmin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['isAdmin'])->prefix('admin')->name('admin.')->group(function () {
     Route::view('dashboard', 'admin.dashboard')->name('dashboard');
     Route::view('change-pin', 'admin.change-pin')->name('change-pin');
 
@@ -36,6 +36,7 @@ Route::middleware(['auth', 'isAdmin'])->prefix('admin')->name('admin.')->group(f
 
 // Employee routes — session-based, no auth required
 Route::middleware(['isEmployee'])->prefix('employee')->name('employee.')->group(function () {
+    Route::view('select', 'employee.select')->name('select');
     Route::view('dashboard', 'employee.dashboard')->name('dashboard');
     Route::view('history', 'employee.task-history')->name('history');
 
@@ -53,7 +54,7 @@ Route::middleware(['isEmployee'])->prefix('employee')->name('employee.')->group(
 });
 
 Route::get('employee-logout', function () {
-    session()->forget('employee_access');
+    session()->forget(['employee_access', 'employee_id', 'employee_name']);
     return redirect()->route('login');
 })->name('employee.logout');
 

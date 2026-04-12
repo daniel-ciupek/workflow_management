@@ -24,3 +24,5 @@ yarn-error.log
 *.log
 docker-compose.override.yml
 .phpunit.result.cache
+/storage/framework/testing/
+/bootstrap/cache/*.php
