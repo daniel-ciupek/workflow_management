@@ -8,6 +8,8 @@ node_modules
 /storage/framework/cache/*
 /storage/framework/sessions/*
 /storage/framework/views/*
+/storage/framework/testing/*
+/storage/app/private/*
 vendor
 .env
 .env.*
