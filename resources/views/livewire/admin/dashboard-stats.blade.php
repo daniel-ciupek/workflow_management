@@ -6,6 +6,11 @@ use Livewire\Volt\Component;
 
 new class extends Component {
 
+    public function mount(): void
+    {
+        abort_unless(auth()->check() && auth()->user()->isAdmin(), 403);
+    }
+
     public function with(): array
     {
         $adminId       = auth()->id();

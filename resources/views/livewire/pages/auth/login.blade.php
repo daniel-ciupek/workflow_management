@@ -24,7 +24,8 @@ new #[Layout('layouts.guest')] class extends Component
 
         // Admin — 6-digit PIN
         if ($len === 6 && ctype_digit($this->pin)) {
-            $user = \App\Models\User::where('pin', $this->pin)->where('role', 'admin')->first();
+            $user = \App\Models\User::where('role', 'admin')->get()
+                ->first(fn ($u) => \Illuminate\Support\Facades\Hash::check($this->pin, (string) $u->pin));
 
             if (!$user) {
                 RateLimiter::hit($key, 60);
@@ -43,7 +44,7 @@ new #[Layout('layouts.guest')] class extends Component
         if ($len === 4 && ctype_digit($this->pin)) {
             $employeePin = Setting::get('employee_pin');
 
-            if (!$employeePin || $this->pin !== $employeePin) {
+            if (!$employeePin || !\Illuminate\Support\Facades\Hash::check($this->pin, $employeePin)) {
                 RateLimiter::hit($key, 60);
                 $this->addError('pin', 'Invalid PIN. Please try again.');
                 $this->pin = '';

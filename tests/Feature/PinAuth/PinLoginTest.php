@@ -5,6 +5,7 @@ namespace Tests\Feature\PinAuth;
 use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Livewire\Volt\Volt;
 use Tests\TestCase;
@@ -57,7 +58,7 @@ class PinLoginTest extends TestCase
 
     public function test_employee_can_login_with_valid_4_digit_pin(): void
     {
-        Setting::set('employee_pin', '1234');
+        Setting::set('employee_pin', Hash::make('1234'));
 
         Volt::test('pages.auth.login')
             ->set('pin', '1234')
@@ -68,7 +69,7 @@ class PinLoginTest extends TestCase
 
     public function test_employee_login_fails_with_wrong_pin(): void
     {
-        Setting::set('employee_pin', '1234');
+        Setting::set('employee_pin', Hash::make('1234'));
 
         Volt::test('pages.auth.login')
             ->set('pin', '9999')

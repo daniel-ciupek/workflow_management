@@ -2,10 +2,16 @@
 
 use App\Models\Setting;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Livewire\Volt\Component;
 
 new class extends Component
 {
+    public function mount(): void
+    {
+        abort_unless(auth()->check() && auth()->user()->isAdmin(), 403);
+    }
+
     // Admin PIN change
     public string $current_pin = '';
     public string $new_pin = '';
@@ -23,7 +29,7 @@ new class extends Component
 
         $user = Auth::user();
 
-        if ($this->current_pin !== $user->pin) {
+        if (!Hash::check($this->current_pin, (string) $user->pin)) {
             $this->addError('current_pin', 'Current PIN is incorrect.');
             $this->current_pin = '';
             return;
@@ -68,7 +74,7 @@ new class extends Component
             return;
         }
 
-        Setting::set('employee_pin', $this->new_employee_pin);
+        Setting::set('employee_pin', Hash::make($this->new_employee_pin));
 
         $this->new_employee_pin = '';
         $this->confirm_employee_pin = '';

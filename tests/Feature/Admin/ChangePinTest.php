@@ -5,6 +5,7 @@ namespace Tests\Feature\Admin;
 use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Hash;
 use Livewire\Volt\Volt;
 use Tests\TestCase;
 
@@ -26,7 +27,7 @@ class ChangePinTest extends TestCase
             ->call('saveAdminPin')
             ->assertHasNoErrors();
 
-        $this->assertDatabaseHas('users', ['id' => $admin->id, 'pin' => '222222']);
+        $this->assertTrue(Hash::check('222222', $admin->fresh()->pin));
     }
 
     public function test_admin_pin_change_fails_with_wrong_current_pin(): void
@@ -41,7 +42,7 @@ class ChangePinTest extends TestCase
             ->call('saveAdminPin')
             ->assertHasErrors(['current_pin']);
 
-        $this->assertDatabaseHas('users', ['id' => $admin->id, 'pin' => '111111']);
+        $this->assertTrue(Hash::check('111111', $admin->fresh()->pin));
     }
 
     public function test_admin_pin_change_fails_if_new_pin_not_6_digits(): void
@@ -97,7 +98,7 @@ class ChangePinTest extends TestCase
             ->call('saveEmployeePin')
             ->assertHasNoErrors();
 
-        $this->assertSame('5678', Setting::get('employee_pin'));
+        $this->assertTrue(Hash::check('5678', Setting::get('employee_pin')));
     }
 
     public function test_employee_pin_change_fails_if_not_4_digits(): void

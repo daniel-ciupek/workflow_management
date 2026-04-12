@@ -11,6 +11,11 @@ use Livewire\WithPagination;
 new class extends Component {
     use WithPagination, WithFileUploads;
 
+    public function mount(): void
+    {
+        abort_unless(auth()->check() && auth()->user()->isAdmin(), 403);
+    }
+
     // View
     public bool $showViewModal = false;
     public ?int $viewingId = null;

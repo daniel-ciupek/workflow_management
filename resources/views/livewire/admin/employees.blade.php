@@ -7,6 +7,11 @@ use Livewire\WithPagination;
 new class extends Component {
     use WithPagination;
 
+    public function mount(): void
+    {
+        abort_unless(auth()->check() && auth()->user()->isAdmin(), 403);
+    }
+
     public bool $showModal = false;
     public bool $showDeleteModal = false;
 

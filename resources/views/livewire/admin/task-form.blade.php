@@ -9,6 +9,11 @@ use Livewire\WithFileUploads;
 new class extends Component {
     use WithFileUploads;
 
+    public function mount(): void
+    {
+        abort_unless(auth()->check() && auth()->user()->isAdmin(), 403);
+    }
+
     public string $title = '';
     public string $address = '';
     public string $materials = '';
