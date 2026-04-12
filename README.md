@@ -138,7 +138,7 @@ Po zalogowaniu PINem pracownika pojawia się ekran wyboru tożsamości — wybie
 ### Pracownik
 - Loguje się wspólnym 4-cyfrowym PINem
 - Wybiera swoją tożsamość z listy po zalogowaniu
-- Widzi przypisane aktywne zadania i oznacza je jako wykonane
+- Widzi przypisane aktywne zadania
 - Ma dostęp do historii zakończonych zadań (max 5 ostatnich)
 
 ---
