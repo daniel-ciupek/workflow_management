@@ -44,6 +44,21 @@ services:
       timeout: 5s
       retries: 5
 
+  scheduler:
+    image: danielciupek/workflow-management:latest
+    container_name: workflow_scheduler
+    restart: unless-stopped
+    volumes:
+      - .:/var/www/html
+      - /var/www/html/vendor
+      - /var/www/html/node_modules
+    environment:
+      - APP_ENV=${APP_ENV:-local}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: php artisan schedule:work
+
   node:
     image: node:22-alpine
     container_name: workflow_node

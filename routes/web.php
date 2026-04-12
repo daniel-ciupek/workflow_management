@@ -36,6 +36,7 @@ Route::middleware(['isAdmin'])->prefix('admin')->name('admin.')->group(function 
 
 // Employee routes — session-based, no auth required
 Route::middleware(['isEmployee'])->prefix('employee')->name('employee.')->group(function () {
+    Route::view('select', 'employee.select')->name('select');
     Route::view('dashboard', 'employee.dashboard')->name('dashboard');
     Route::view('history', 'employee.task-history')->name('history');
 
@@ -53,7 +54,7 @@ Route::middleware(['isEmployee'])->prefix('employee')->name('employee.')->group(
 });
 
 Route::get('employee-logout', function () {
-    session()->forget('employee_access');
+    session()->forget(['employee_access', 'employee_id', 'employee_name']);
     return redirect()->route('login');
 })->name('employee.logout');
 

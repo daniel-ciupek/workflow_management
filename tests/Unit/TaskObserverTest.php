@@ -42,37 +42,37 @@ class TaskObserverTest extends TestCase
         $this->assertDatabaseMissing('tasks', ['id' => $task->id]);
     }
 
-    public function test_prune_does_not_remove_when_completed_count_is_at_or_below_30(): void
+    public function test_prune_does_not_remove_when_completed_count_is_at_or_below_5(): void
     {
         $admin    = User::factory()->admin()->create();
         $employee = User::factory()->employee()->create();
 
-        for ($i = 0; $i < 30; $i++) {
+        for ($i = 0; $i < 5; $i++) {
             $task = Task::factory()->create(['created_by' => $admin->id]);
             $employee->tasks()->attach($task->id, ['done' => true, 'completed_at' => now()]);
         }
 
         TaskObserver::pruneCompletedForUser($employee);
 
-        $this->assertCount(30, $employee->tasks()->wherePivot('done', true)->get());
+        $this->assertCount(5, $employee->tasks()->wherePivot('done', true)->get());
     }
 
-    public function test_prune_removes_oldest_tasks_beyond_30(): void
+    public function test_prune_removes_oldest_tasks_beyond_5(): void
     {
         $admin    = User::factory()->admin()->create();
         $employee = User::factory()->employee()->create();
 
-        for ($i = 0; $i < 32; $i++) {
+        for ($i = 0; $i < 7; $i++) {
             $task = Task::factory()->create(['created_by' => $admin->id]);
             $employee->tasks()->attach($task->id, [
                 'done'         => true,
-                'completed_at' => now()->subMinutes(32 - $i),
+                'completed_at' => now()->subMinutes(7 - $i),
             ]);
         }
 
         TaskObserver::pruneCompletedForUser($employee);
 
-        $this->assertCount(30, $employee->tasks()->wherePivot('done', true)->get());
+        $this->assertCount(5, $employee->tasks()->wherePivot('done', true)->get());
     }
 
     public function test_prune_deletes_task_if_no_other_users_assigned(): void
@@ -81,11 +81,11 @@ class TaskObserverTest extends TestCase
         $employee = User::factory()->employee()->create();
 
         $oldTasks = [];
-        for ($i = 0; $i < 31; $i++) {
+        for ($i = 0; $i < 6; $i++) {
             $task = Task::factory()->create(['created_by' => $admin->id]);
             $employee->tasks()->attach($task->id, [
                 'done'         => true,
-                'completed_at' => now()->subMinutes(31 - $i),
+                'completed_at' => now()->subMinutes(6 - $i),
             ]);
             $oldTasks[] = $task->id;
         }

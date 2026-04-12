@@ -25,11 +25,11 @@ class TaskObserver
             ->orderByPivot('completed_at', 'asc')
             ->get();
 
-        if ($completed->count() <= 30) {
+        if ($completed->count() <= 5) {
             return;
         }
 
-        foreach ($completed->slice(0, $completed->count() - 30) as $task) {
+        foreach ($completed->slice(0, $completed->count() - 5) as $task) {
             $user->tasks()->detach($task->id);
 
             if ($task->fresh()->users()->count() === 0) {
