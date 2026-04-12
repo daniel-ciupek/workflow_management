@@ -29,21 +29,13 @@ class DashboardTest extends TestCase
         $this->assertNotNull($pivot->completed_at);
     }
 
-    public function test_mark_done_without_session_employee_id_does_nothing(): void
+    public function test_dashboard_without_employee_id_redirects_to_select(): void
     {
-        $admin    = User::factory()->admin()->create();
-        $employee = User::factory()->employee()->create();
-        $task     = Task::factory()->create(['created_by' => $admin->id]);
-        $task->users()->attach($employee->id, ['done' => false]);
-
-        // No employee_id in session
+        // No employee_id in session — component should redirect to employee.select
         $this->withSession(['employee_access' => true]);
 
         Volt::test('employee.dashboard')
-            ->call('markDone', $task->id);
-
-        $pivot = $employee->tasks()->wherePivot('task_id', $task->id)->first()->pivot;
-        $this->assertFalse((bool) $pivot->done);
+            ->assertRedirect(route('employee.select'));
     }
 
     public function test_dashboard_shows_only_active_tasks(): void

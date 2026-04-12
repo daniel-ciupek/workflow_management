@@ -63,7 +63,7 @@ class PinLoginTest extends TestCase
             ->set('pin', '1234')
             ->call('authenticate')
             ->assertHasNoErrors()
-            ->assertRedirect(route('employee.dashboard'));
+            ->assertRedirect(route('employee.select'));
     }
 
     public function test_employee_login_fails_with_wrong_pin(): void

@@ -1,47 +1,34 @@
 # Tests TODO
 
-## Status: 50/50 testów przechodzi ✅
+## Status: 76/76 testów przechodzi ✅
 
-Pokryte: PIN auth, middleware, task CRUD, archiwizacja, observer, modele, employee dashboard.
+Pokryte: PIN auth, middleware, task CRUD, archiwizacja, observer, modele, employee dashboard, super admin vs admin izolacja, zarządzanie pracownikami, zmiana PIN, historia tasków.
 
 ---
 
-## Do zrobienia
+## Pliki testów
 
-### Priorytet wysoki
-
-**Super admin vs zwykły admin — izolacja uprawnień**
-- Super admin może wejść w `/admin/admins`, zwykły admin dostaje 403
-- Zwykły admin widzi TYLKO swoich pracowników (nie wszystkich)
-- Super admin widzi wszystkich pracowników
-
-**Zarządzanie pracownikami (`admin.employees`)**
-- Tworzenie pracownika (name required, widoczność dla admina)
-- Edycja pracownika — zmiana przypisanych adminów
-- Usuwanie pracownika — cascade na task_user
-- Super admin może przypisać dowolnego admina, zwykły — tylko siebie
-
-**Zmiana PIN-u (`admin.change-pin`)**
-- Zła wartość "Current PIN" blokuje zmianę
-- Nowy PIN musi mieć 6 cyfr, potwierdzenie musi się zgadzać
-- Zmiana PIN-u pracownika (4 cyfry) — Setting::set('employee_pin')
-
-### Priorytet niski
-
-**Historia tasków**
-- Admin widzi tylko swoje zarchiwizowane taski (filtr `created_by`)
-- Pracownik widzi historię zakończonych przez siebie
-
-**Livewire komponenty (integracyjne)**
-- `admin.task-form` — render, walidacja, redirect po save
-- `admin.tasks` — paginacja (10 na stronę)
-- `admin.admins` — tylko super admin może tworzyć/usuwać adminów
+| Plik | Zakres |
+|------|--------|
+| `tests/Unit/TaskObserverTest.php` | Observer: usuwanie załączników, prune limit 5 |
+| `tests/Unit/TaskTest.php` | Model Task: scope active/archived, relacje |
+| `tests/Unit/UserTest.php` | Model User: role, relacje |
+| `tests/Feature/PinAuth/PinLoginTest.php` | Logowanie PIN (admin/employee), rate limiting |
+| `tests/Feature/Middleware/IsAdminTest.php` | Middleware isAdmin |
+| `tests/Feature/Middleware/IsEmployeeTest.php` | Middleware isEmployee |
+| `tests/Feature/Admin/TaskTest.php` | CRUD tasków admina |
+| `tests/Feature/Admin/TaskHistoryTest.php` | Historia tasków admina (izolacja) |
+| `tests/Feature/Admin/AdminAccessTest.php` | Super admin vs zwykły admin, uprawnienia |
+| `tests/Feature/Admin/EmployeeManagementTest.php` | Tworzenie/edycja/usuwanie pracowników |
+| `tests/Feature/Admin/ChangePinTest.php` | Zmiana PIN admina i pracownika |
+| `tests/Feature/Employee/DashboardTest.php` | Dashboard pracownika, markDone, redirect bez employee_id |
+| `tests/Feature/Commands/ArchiveOldTasksTest.php` | Komenda archiwizacji |
 
 ---
 
 ## Uwagi
 
-- Testy uruchamiać przez: `docker exec workflow_app php artisan test`
+- Testy uruchamiać przez: `docker compose exec app php artisan test`
 - Pliki testów: `tests/Feature/` i `tests/Unit/`
 - Stary scaffolding (email/password) usunięty — nie przywracać
-- Pracownicy widzą wszystkie taski celowo (jeden wspólny PIN) — nie testować izolacji
+- Pracownicy wybierają tożsamość po zalogowaniu (ekran select) — sesja `employee_id`
