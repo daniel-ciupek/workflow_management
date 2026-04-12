@@ -65,17 +65,17 @@ new #[Layout('layouts.guest')] class extends Component
 
 <div class="w-full">
     {{-- Card --}}
-    <div class="bg-white rounded-2xl p-8" style="box-shadow: 0 4px 24px 0 rgba(0,0,0,0.08), 0 1px 4px 0 rgba(0,0,0,0.04);">
+    <div class="bg-white rounded-2xl p-8" style="box-shadow: 0 8px 32px 0 rgba(0,0,0,0.10), 0 2px 6px 0 rgba(0,0,0,0.06); border: 1px solid rgba(226,232,240,0.8);">
 
         {{-- Logo + Header --}}
         <div class="text-center mb-8">
-            <div class="inline-flex items-center justify-center w-12 h-12 bg-blue-600 rounded-xl shadow-md mb-4">
-                <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <div class="inline-flex items-center justify-center w-14 h-14 bg-blue-600 rounded-2xl mb-5" style="box-shadow: 0 4px 14px 0 rgba(37,99,235,0.35);">
+                <svg class="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                 </svg>
             </div>
-            <h1 class="text-xl font-semibold text-slate-900">Sign in to Workflow</h1>
-            <p class="text-slate-500 mt-1 text-sm">Enter your PIN to continue</p>
+            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Workflow</h1>
+            <p class="text-slate-500 mt-1.5 text-sm">Enter your PIN to continue</p>
         </div>
 
         <form wire:submit="authenticate" class="space-y-5">

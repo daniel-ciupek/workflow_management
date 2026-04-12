@@ -125,11 +125,11 @@ new class extends Component {
     }
 }; ?>
 
-<div>
+<div class="page-enter">
     {{-- Page header --}}
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-2xl font-bold text-slate-900">Employees</h1>
+            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Employees</h1>
             <p class="text-slate-500 text-sm mt-0.5">Manage your team members</p>
         </div>
         <button wire:click="openCreate"

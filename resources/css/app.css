@@ -13,8 +13,8 @@ body {
 
 /* Modal backdrop blur */
 .modal-backdrop {
-    background-color: rgba(15, 23, 42, 0.4);
-    backdrop-filter: blur(2px);
+    background-color: rgba(15, 23, 42, 0.45);
+    backdrop-filter: blur(3px);
 }
 
 /* Pagination — override DaisyUI defaults */
@@ -50,12 +50,22 @@ a, button {
     a:hover,
     button:hover {
         opacity: 1;
+        background-color: inherit;
+    }
+    .task-card:hover {
+        transform: none;
+        box-shadow: none;
     }
 }
 
 /* Card consistent box shadow */
 .card-shadow {
     box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+}
+
+/* Elevated card shadow for task cards */
+.card-shadow-md {
+    box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.07), 0 1px 3px 0 rgba(0, 0, 0, 0.05);
 }
 
 /* DaisyUI modal — rounded corners override */
@@ -77,4 +87,69 @@ a, button {
 }
 ::-webkit-scrollbar-thumb:hover {
     background: #94A3B8;
+}
+
+/* Task card — PC hover effect (non-touch only) */
+@media (hover: hover) {
+    .task-card:hover {
+        border-color: #BFDBFE;
+        box-shadow: 0 4px 16px 0 rgba(37, 99, 235, 0.08), 0 1px 4px 0 rgba(0, 0, 0, 0.05);
+        transform: translateY(-1px);
+    }
+}
+
+/* Stat card hover — PC only */
+@media (hover: hover) {
+    .stat-card:hover {
+        border-color: #93C5FD;
+        box-shadow: 0 4px 16px 0 rgba(37, 99, 235, 0.1), 0 1px 4px 0 rgba(0, 0, 0, 0.06);
+    }
+}
+
+/* Smooth transition for cards */
+.task-card, .stat-card {
+    transition: border-color 200ms ease, box-shadow 200ms ease, transform 200ms ease;
+}
+
+/* Status badge animations */
+.status-badge {
+    transition: background-color 150ms ease, color 150ms ease;
+}
+
+/* Form input focus enhancement */
+input:focus, textarea:focus, select:focus {
+    transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+/* Table row hover — PC only */
+@media (hover: hover) {
+    .table-row-hover:hover {
+        background-color: #F8FAFC;
+    }
+}
+
+/* Page entry animation */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.page-enter {
+    animation: fadeInUp 200ms ease;
+}
+
+/* Navbar link active indicator */
+.nav-link-active {
+    position: relative;
+}
+
+/* Modal entry animation */
+.modal-box {
+    animation: fadeInUp 180ms cubic-bezier(0.34, 1.2, 0.64, 1);
 }

@@ -51,26 +51,26 @@
                 {{-- Desktop navigation (admin) --}}
                 @auth
                     @if(auth()->user()->isAdmin())
-                        <nav class="hidden md:flex items-center gap-0.5">
+                        <nav class="hidden md:flex items-center h-14">
                             <a href="{{ route('admin.dashboard') }}"
-                               class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors duration-150 {{ request()->routeIs('admin.dashboard') ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' }}">
+                               class="px-3.5 text-sm font-medium h-full flex items-center border-b-2 transition-colors duration-150 {{ request()->routeIs('admin.dashboard') ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-900 hover:border-slate-300' }}">
                                 Dashboard
                             </a>
                             <a href="{{ route('admin.employees') }}"
-                               class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors duration-150 {{ request()->routeIs('admin.employees') ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' }}">
+                               class="px-3.5 text-sm font-medium h-full flex items-center border-b-2 transition-colors duration-150 {{ request()->routeIs('admin.employees') ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-900 hover:border-slate-300' }}">
                                 Employees
                             </a>
                             <a href="{{ route('admin.tasks') }}"
-                               class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors duration-150 {{ request()->routeIs('admin.tasks') || request()->routeIs('admin.tasks.create') ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' }}">
+                               class="px-3.5 text-sm font-medium h-full flex items-center border-b-2 transition-colors duration-150 {{ request()->routeIs('admin.tasks') || request()->routeIs('admin.tasks.create') ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-900 hover:border-slate-300' }}">
                                 Tasks
                             </a>
                             <a href="{{ route('admin.tasks.history') }}"
-                               class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors duration-150 {{ request()->routeIs('admin.tasks.history') ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' }}">
+                               class="px-3.5 text-sm font-medium h-full flex items-center border-b-2 transition-colors duration-150 {{ request()->routeIs('admin.tasks.history') ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-900 hover:border-slate-300' }}">
                                 History
                             </a>
                             @if(auth()->user()->isSuperAdmin())
                                 <a href="{{ route('admin.admins') }}"
-                                   class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors duration-150 {{ request()->routeIs('admin.admins') ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' }}">
+                                   class="px-3.5 text-sm font-medium h-full flex items-center border-b-2 transition-colors duration-150 {{ request()->routeIs('admin.admins') ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-900 hover:border-slate-300' }}">
                                     Admins
                                 </a>
                             @endif
@@ -80,13 +80,13 @@
 
                 {{-- Desktop navigation (employee) --}}
                 @if(!auth()->check() && session('employee_access'))
-                    <nav class="hidden md:flex items-center gap-0.5">
+                    <nav class="hidden md:flex items-center h-14">
                         <a href="{{ route('employee.dashboard') }}"
-                           class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors duration-150 {{ request()->routeIs('employee.dashboard') ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' }}">
+                           class="px-3.5 text-sm font-medium h-full flex items-center border-b-2 transition-colors duration-150 {{ request()->routeIs('employee.dashboard') ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-900 hover:border-slate-300' }}">
                             Tasks
                         </a>
                         <a href="{{ route('employee.history') }}"
-                           class="px-3 py-1.5 text-sm font-medium rounded-md transition-colors duration-150 {{ request()->routeIs('employee.history') ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100' }}">
+                           class="px-3.5 text-sm font-medium h-full flex items-center border-b-2 transition-colors duration-150 {{ request()->routeIs('employee.history') ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500 hover:text-slate-900 hover:border-slate-300' }}">
                             History
                         </a>
                     </nav>

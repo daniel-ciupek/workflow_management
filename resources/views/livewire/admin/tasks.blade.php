@@ -175,11 +175,11 @@ new class extends Component {
     }
 }; ?>
 
-<div>
+<div class="page-enter">
     {{-- Page header --}}
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-2xl font-bold text-slate-900">Tasks</h1>
+            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Tasks</h1>
             <p class="text-slate-500 text-sm mt-0.5">Manage and track your active tasks</p>
         </div>
         <a href="{{ route('admin.tasks.create') }}"
@@ -203,7 +203,7 @@ new class extends Component {
     {{-- Task list --}}
     <div class="space-y-3">
         @forelse($tasks as $task)
-            <div class="bg-white rounded-xl border border-slate-200 p-5 transition-all duration-200 hover:border-slate-300 hover:shadow-sm group"
+            <div class="task-card bg-white rounded-xl border border-slate-200 p-5 group"
                  style="box-shadow: 0 1px 3px 0 rgba(0,0,0,0.04);">
                 <div class="flex items-start justify-between gap-4">
                     <div class="flex-1 min-w-0">
@@ -217,15 +217,15 @@ new class extends Component {
 
                         {{-- Meta info --}}
                         <div class="flex flex-wrap items-center gap-3 mt-2.5">
-                            <span class="inline-flex items-center gap-1 text-xs text-slate-400">
-                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <span class="inline-flex items-center gap-1.5 text-xs text-slate-400">
+                                <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                                 </svg>
                                 {{ $task->created_at->format('d M Y') }}
                             </span>
                             @if(!empty($task->attachments))
-                                <span class="inline-flex items-center gap-1 text-xs text-slate-400">
-                                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <span class="inline-flex items-center gap-1.5 text-xs text-slate-400">
+                                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
                                     </svg>
                                     {{ count($task->attachments) }} file{{ count($task->attachments) !== 1 ? 's' : '' }}
@@ -237,7 +237,7 @@ new class extends Component {
                         @if($task->users->isNotEmpty())
                             <div class="flex flex-wrap gap-1.5 mt-3">
                                 @foreach($task->users as $user)
-                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-slate-100 text-slate-700">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
                                         {{ $user->name }}
                                     </span>
                                 @endforeach
@@ -246,7 +246,7 @@ new class extends Component {
                     </div>
 
                     {{-- Actions --}}
-                    <div class="flex items-center gap-1 shrink-0">
+                    <div class="flex items-center gap-0.5 shrink-0">
                         <button wire:click="openView({{ $task->id }})"
                                 class="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors duration-150"
                                 title="View details">

@@ -64,11 +64,11 @@ new class extends Component {
     }
 }; ?>
 
-<div>
+<div class="page-enter">
     {{-- Page header --}}
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-2xl font-bold text-slate-900">Task History</h1>
+            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Task History</h1>
             <p class="text-slate-500 text-sm mt-0.5">Archived tasks older than 24 hours</p>
         </div>
         <span class="inline-flex items-center px-3 py-1 rounded-lg text-sm font-medium bg-slate-100 text-slate-600">

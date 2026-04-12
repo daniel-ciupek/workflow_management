@@ -63,11 +63,11 @@ new class extends Component {
     }
 }; ?>
 
-<div>
+<div class="page-enter">
     {{-- Page header --}}
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-2xl font-bold text-slate-900">My Tasks</h1>
+            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">My Tasks</h1>
             <p class="text-slate-500 text-sm mt-0.5">Tap a task to view details</p>
         </div>
         <span class="inline-flex items-center px-3 py-1 rounded-lg text-sm font-medium bg-slate-100 text-slate-600">
@@ -77,32 +77,35 @@ new class extends Component {
 
     @if($tasks->isEmpty())
         <div class="bg-white rounded-xl border border-dashed border-slate-300 p-12 text-center">
-            <div class="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center mx-auto mb-4">
-                <svg class="w-6 h-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <div class="w-14 h-14 bg-green-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <svg class="w-7 h-7 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
             </div>
-            <p class="text-slate-500 text-sm font-medium">No tasks available</p>
-            <p class="text-slate-400 text-xs mt-1">Check back later for new assignments</p>
+            <p class="text-slate-700 text-sm font-semibold">All caught up!</p>
+            <p class="text-slate-400 text-xs mt-1">No tasks available right now</p>
         </div>
     @else
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             @foreach($tasks as $task)
                 <button wire:click="openView({{ $task->id }})"
-                        class="text-left bg-white rounded-xl border border-slate-200 p-5 transition-all duration-200 active:scale-[0.98] w-full"
-                        style="box-shadow: 0 1px 3px 0 rgba(0,0,0,0.06);">
-                    {{-- Status indicator --}}
+                        class="task-card text-left bg-white rounded-xl border border-slate-200 p-5 active:scale-[0.98] w-full"
+                        style="box-shadow: 0 1px 4px 0 rgba(0,0,0,0.06);">
+                    {{-- Top row: title + status dot --}}
                     <div class="flex items-start justify-between gap-2 mb-3">
-                        <h3 class="font-semibold text-slate-900 text-base leading-snug">{{ $task->title }}</h3>
-                        <div class="w-2 h-2 bg-blue-500 rounded-full mt-1.5 shrink-0"></div>
+                        <h3 class="font-semibold text-slate-900 text-sm leading-snug">{{ $task->title }}</h3>
+                        <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-xs font-semibold bg-blue-50 text-blue-600 shrink-0 border border-blue-100">
+                            <span class="w-1.5 h-1.5 bg-blue-500 rounded-full"></span>
+                            Active
+                        </span>
                     </div>
 
-                    <div class="space-y-1.5">
+                    <div class="space-y-1.5 mb-3">
                         <p class="text-xs text-slate-500 flex items-center gap-1.5">
                             <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                             </svg>
-                            {{ $task->creator?->name ?? '—' }}
+                            <span class="truncate">{{ $task->creator?->name ?? '—' }}</span>
                         </p>
                         <p class="text-xs text-slate-500 flex items-center gap-1.5">
                             <svg class="w-3.5 h-3.5 text-slate-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -113,7 +116,7 @@ new class extends Component {
                     </div>
 
                     @if($task->users->isNotEmpty())
-                        <div class="flex flex-wrap gap-1 mt-3">
+                        <div class="flex flex-wrap gap-1 mb-3">
                             @foreach($task->users as $user)
                                 <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-slate-100 text-slate-600">
                                     {{ $user->name }}
@@ -122,12 +125,14 @@ new class extends Component {
                         </div>
                     @endif
 
-                    <p class="text-xs text-blue-600 font-medium mt-3 flex items-center gap-1">
-                        View details
-                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-                        </svg>
-                    </p>
+                    <div class="pt-3 border-t border-slate-50 flex items-center justify-between">
+                        <p class="text-xs text-blue-600 font-semibold flex items-center gap-1">
+                            View details
+                            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </p>
+                    </div>
                 </button>
             @endforeach
         </div>

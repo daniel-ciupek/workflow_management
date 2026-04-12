@@ -76,7 +76,7 @@ new class extends Component
     }
 }; ?>
 
-<div class="max-w-xl">
+<div class="max-w-xl page-enter">
     {{-- Page header --}}
     <div class="flex items-center gap-3 mb-6">
         <a href="{{ route('admin.dashboard') }}"

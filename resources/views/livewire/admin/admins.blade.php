@@ -113,11 +113,11 @@ new class extends Component {
     }
 }; ?>
 
-<div>
+<div class="page-enter">
     {{-- Page header --}}
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h1 class="text-2xl font-bold text-slate-900">Administrators</h1>
+            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Administrators</h1>
             <p class="text-slate-500 text-sm mt-0.5">Manage administrator accounts and PINs</p>
         </div>
         <button wire:click="openCreate"
