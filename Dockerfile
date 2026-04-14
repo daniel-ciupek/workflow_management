@@ -1,5 +1,8 @@
 FROM php:8.4-fpm-alpine
 
+# Upgrade all Alpine packages to get latest security patches
+RUN apk upgrade --no-cache
+
 # Install system dependencies
 RUN apk add --no-cache \
     libpng-dev \
@@ -8,7 +11,6 @@ RUN apk add --no-cache \
     libzip-dev \
     postgresql-dev \
     zip \
-    unzip \
     oniguruma-dev \
     nodejs \
     npm \
@@ -41,7 +43,7 @@ RUN composer install --optimize-autoloader --no-interaction --no-scripts
 RUN npm ci && npm run build
 
 # Set permissions
-RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache /var/www/html/vendor
 
 EXPOSE 9000
 CMD ["php-fpm"]

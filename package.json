@@ -9,11 +9,17 @@
     "dependencies": {
         "daisyui": "^4.12.23"
     },
+    "overrides": {
+        "tar": "^7.5.11",
+        "minimatch": "^10.2.3",
+        "picomatch": "^4.0.4",
+        "brace-expansion": "^5.0.5"
+    },
     "devDependencies": {
         "@tailwindcss/forms": "^0.5.2",
         "@tailwindcss/vite": "^4.0.0",
         "autoprefixer": "^10.4.2",
-        "axios": ">=1.11.0 <=1.14.0",
+        "axios": "^1.15.0",
         "concurrently": "^9.0.1",
         "laravel-vite-plugin": "^3.0.0",
         "postcss": "^8.4.31",

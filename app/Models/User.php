@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Support\Facades\Hash;
 
 class User extends Authenticatable
 {
@@ -27,6 +28,11 @@ class User extends Authenticatable
             'role'     => 'string',
             'is_super' => 'boolean',
         ];
+    }
+
+    public function setPinAttribute(?string $value): void
+    {
+        $this->attributes['pin'] = $value !== null ? Hash::make($value) : null;
     }
 
     public function isAdmin(): bool

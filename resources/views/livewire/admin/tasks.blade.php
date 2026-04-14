@@ -11,6 +11,11 @@ use Livewire\WithPagination;
 new class extends Component {
     use WithPagination, WithFileUploads;
 
+    public function mount(): void
+    {
+        abort_unless(auth()->check() && auth()->user()->isAdmin(), 403);
+    }
+
     // View
     public bool $showViewModal = false;
     public ?int $viewingId = null;
@@ -175,208 +180,310 @@ new class extends Component {
     }
 }; ?>
 
-<div>
+<div class="page-enter">
+    {{-- Page header --}}
     <div class="flex items-center justify-between mb-6">
-        <h2 class="text-2xl font-bold">Tasks</h2>
-        <a href="{{ route('admin.tasks.create') }}" class="btn btn-primary btn-sm">+ New Task</a>
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Tasks</h1>
+            <p class="text-slate-500 text-sm mt-0.5">Manage and track your active tasks</p>
+        </div>
+        <a href="{{ route('admin.tasks.create') }}"
+           class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+            </svg>
+            New Task
+        </a>
     </div>
 
     @if(session('success'))
-        <div class="alert alert-success mb-4">
-            <span>{{ session('success') }}</span>
+        <div class="flex items-center gap-3 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-xl mb-5 text-sm">
+            <svg class="w-5 h-5 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            {{ session('success') }}
         </div>
     @endif
 
-    <div class="space-y-4">
+    {{-- Task list --}}
+    <div class="space-y-3">
         @forelse($tasks as $task)
-            <div class="card bg-base-100 shadow">
-                <div class="card-body">
-                    <div class="flex items-start justify-between gap-4">
-                        <div class="flex-1 min-w-0">
-                            <h3 class="font-semibold text-lg">{{ $task->title }}</h3>
+            <div class="task-card bg-white rounded-xl border border-slate-200 p-5 group"
+                 style="box-shadow: 0 1px 3px 0 rgba(0,0,0,0.04);">
+                <div class="flex items-start justify-between gap-4">
+                    <div class="flex-1 min-w-0">
+                        {{-- Title --}}
+                        <h3 class="font-semibold text-slate-900 text-base leading-snug">{{ $task->title }}</h3>
 
-                            @if($task->description)
-                                <p class="text-sm text-base-content/60 mt-1 line-clamp-2">{{ $task->description }}</p>
+                        {{-- Description preview --}}
+                        @if($task->description)
+                            <p class="text-sm text-slate-500 mt-1 line-clamp-2 leading-relaxed">{{ $task->description }}</p>
+                        @endif
+
+                        {{-- Meta info --}}
+                        <div class="flex flex-wrap items-center gap-3 mt-2.5">
+                            <span class="inline-flex items-center gap-1.5 text-xs text-slate-400">
+                                <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                                {{ $task->created_at->format('d M Y') }}
+                            </span>
+                            @if(!empty($task->attachments))
+                                <span class="inline-flex items-center gap-1.5 text-xs text-slate-400">
+                                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+                                    </svg>
+                                    {{ count($task->attachments) }} file{{ count($task->attachments) !== 1 ? 's' : '' }}
+                                </span>
                             @endif
+                        </div>
 
-                            <div class="text-xs text-base-content/40 mt-2">
-                                Created {{ $task->created_at->format('d M Y') }}
-                                @if(!empty($task->attachments))
-                                    &bull; {{ count($task->attachments) }} attachment(s)
-                                @endif
+                        {{-- Assigned employees --}}
+                        @if($task->users->isNotEmpty())
+                            <div class="flex flex-wrap gap-1.5 mt-3">
+                                @foreach($task->users as $user)
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                                        {{ $user->name }}
+                                    </span>
+                                @endforeach
                             </div>
+                        @endif
+                    </div>
 
-                            @if($task->users->isNotEmpty())
-                                <div class="flex flex-wrap gap-1 mt-2">
-                                    @foreach($task->users as $user)
-                                        <span class="badge badge-ghost badge-sm">{{ $user->name }}</span>
-                                    @endforeach
-                                </div>
-                            @endif
-                        </div>
-
-                        <div class="flex gap-1 shrink-0">
-                            <button wire:click="openView({{ $task->id }})" class="btn btn-ghost btn-xs">View</button>
-                            <button wire:click="openEdit({{ $task->id }})" class="btn btn-ghost btn-xs">Edit</button>
-                            <button wire:click="confirmDelete({{ $task->id }})" class="btn btn-ghost btn-xs text-error">Delete</button>
-                        </div>
+                    {{-- Actions --}}
+                    <div class="flex items-center gap-0.5 shrink-0">
+                        <button wire:click="openView({{ $task->id }})"
+                                class="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors duration-150"
+                                title="View details">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                            </svg>
+                        </button>
+                        <button wire:click="openEdit({{ $task->id }})"
+                                class="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors duration-150"
+                                title="Edit task">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                            </svg>
+                        </button>
+                        <button wire:click="confirmDelete({{ $task->id }})"
+                                class="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-150"
+                                title="Delete task">
+                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                            </svg>
+                        </button>
                     </div>
                 </div>
             </div>
         @empty
-            <div class="card bg-base-100 shadow">
-                <div class="card-body text-center text-base-content/50 py-12">
-                    No tasks yet. <a href="{{ route('admin.tasks.create') }}" class="link link-primary">Create the first one.</a>
+            <div class="bg-white rounded-xl border border-dashed border-slate-300 p-12 text-center">
+                <div class="w-12 h-12 bg-slate-100 rounded-xl flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-6 h-6 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                    </svg>
                 </div>
+                <p class="text-slate-500 text-sm font-medium mb-1">No tasks yet</p>
+                <p class="text-slate-400 text-xs mb-4">Create your first task to get started</p>
+                <a href="{{ route('admin.tasks.create') }}"
+                   class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors duration-150">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Create first task
+                </a>
             </div>
         @endforelse
     </div>
 
     @if($tasks->hasPages())
-        <div class="mt-4">{{ $tasks->links() }}</div>
+        <div class="mt-5">{{ $tasks->links() }}</div>
     @endif
 
     {{-- View Modal --}}
     @if($showViewModal && $viewingTask)
     <div class="modal modal-open">
-        <div class="modal-box w-11/12 max-w-lg">
-            <div class="flex items-start justify-between gap-4 mb-4">
-                <h3 class="font-bold text-lg">{{ $viewingTask->title }}</h3>
-                <button wire:click="closeViewModal" class="btn btn-sm btn-circle btn-ghost">✕</button>
-            </div>
-
-            <div class="text-xs text-base-content/40 mb-4">
-                Created {{ $viewingTask->created_at->format('d M Y, H:i') }}
-            </div>
-
-            {{-- Address --}}
-            @if($viewingTask->address)
-            <div class="mb-4">
-                <p class="text-xs font-semibold text-base-content/50 uppercase tracking-wide mb-1">Address</p>
-                <p class="text-sm text-base-content/80 whitespace-pre-wrap">{{ $viewingTask->address }}</p>
-            </div>
-            @endif
-
-            {{-- Materials --}}
-            @if($viewingTask->materials)
-            <div class="mb-4">
-                <p class="text-xs font-semibold text-base-content/50 uppercase tracking-wide mb-1">Materials</p>
-                <p class="text-sm text-base-content/80 whitespace-pre-wrap">{{ $viewingTask->materials }}</p>
-            </div>
-            @endif
-
-            {{-- Description --}}
-            <div class="mb-4">
-                <p class="text-xs font-semibold text-base-content/50 uppercase tracking-wide mb-1">Description</p>
-                @if($viewingTask->description)
-                    <p class="text-sm text-base-content/80 whitespace-pre-wrap">{{ $viewingTask->description }}</p>
-                @else
-                    <p class="text-sm text-base-content/40 italic">No description provided.</p>
-                @endif
-            </div>
-
-            {{-- Employees --}}
-            @if($viewingTask->users->isNotEmpty())
-            <div class="mb-4">
-                <p class="text-xs font-semibold text-base-content/50 uppercase tracking-wide mb-2">Assigned Employees</p>
-                <div class="flex flex-wrap gap-1">
-                    @foreach($viewingTask->users as $user)
-                        <span class="badge badge-ghost badge-sm">{{ $user->name }}</span>
-                    @endforeach
+        <div class="modal-box w-11/12 max-w-lg rounded-2xl p-0 overflow-hidden">
+            {{-- Modal header --}}
+            <div class="flex items-start justify-between gap-4 px-6 py-5 border-b border-slate-100">
+                <div>
+                    <h3 class="font-semibold text-slate-900 text-lg leading-snug">{{ $viewingTask->title }}</h3>
+                    <p class="text-xs text-slate-400 mt-0.5">Created {{ $viewingTask->created_at->format('d M Y, H:i') }}</p>
                 </div>
+                <button wire:click="closeViewModal" class="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors duration-150 shrink-0">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
             </div>
-            @endif
 
-            {{-- Attachments --}}
-            <div class="mb-4" x-data="{
-                lightbox: null,
-                scale: 1, tx: 0, ty: 0,
-                dragging: false, ox: 0, oy: 0,
-                open(url) { this.lightbox = url; this.scale = 1; this.tx = 0; this.ty = 0; },
-                close() { this.lightbox = null; },
-                zoom(e) {
-                    e.preventDefault();
-                    const factor = e.deltaY < 0 ? 1.15 : 0.87;
-                    this.scale = Math.max(1, Math.min(12, this.scale * factor));
-                    if (this.scale === 1) { this.tx = 0; this.ty = 0; }
-                },
-                grab(e) { if (this.scale > 1) { this.dragging = true; this.ox = e.clientX - this.tx; this.oy = e.clientY - this.ty; } },
-                pan(e) { if (this.dragging) { this.tx = e.clientX - this.ox; this.ty = e.clientY - this.oy; } },
-                drop() { this.dragging = false; },
-                reset() { this.scale = 1; this.tx = 0; this.ty = 0; }
-            }">
-                <p class="text-xs font-semibold text-base-content/50 uppercase tracking-wide mb-2">Attachments</p>
-                @if(!empty($viewingTask->attachments))
-                    <div class="flex flex-wrap gap-2">
-                        @foreach($viewingTask->attachments as $path)
-                            @php $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION)); @endphp
-                            @if(in_array($ext, ['jpg', 'jpeg']))
-                                @php $url = route('admin.attachments.view', base64_encode($path)); @endphp
-                                <img src="{{ $url }}"
-                                     alt="{{ basename($path) }}"
-                                     class="w-24 h-24 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity border border-base-300"
-                                     @click="open('{{ $url }}')" />
-                            @else
-                                <a href="{{ route('admin.attachments.view', base64_encode($path)) }}"
-                                   target="_blank"
-                                   class="flex items-center gap-2 bg-base-200 px-3 py-2 rounded-lg text-sm link link-primary hover:bg-base-300">
-                                    📄 {{ basename($path) }}
-                                </a>
-                            @endif
+            {{-- Modal body --}}
+            <div class="px-6 py-5 space-y-5 max-h-[60vh] overflow-y-auto">
+                @if($viewingTask->address)
+                <div>
+                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Address</p>
+                    <p class="text-sm text-slate-700 whitespace-pre-wrap bg-slate-50 rounded-lg px-3 py-2.5">{{ $viewingTask->address }}</p>
+                </div>
+                @endif
+
+                @if($viewingTask->materials)
+                <div>
+                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Materials</p>
+                    <p class="text-sm text-slate-700 whitespace-pre-wrap bg-slate-50 rounded-lg px-3 py-2.5">{{ $viewingTask->materials }}</p>
+                </div>
+                @endif
+
+                <div>
+                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Description</p>
+                    @if($viewingTask->description)
+                        <p class="text-sm text-slate-700 whitespace-pre-wrap bg-slate-50 rounded-lg px-3 py-2.5">{{ $viewingTask->description }}</p>
+                    @else
+                        <p class="text-sm text-slate-400 italic">No description provided.</p>
+                    @endif
+                </div>
+
+                @if($viewingTask->users->isNotEmpty())
+                <div>
+                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Assigned Employees</p>
+                    <div class="flex flex-wrap gap-1.5">
+                        @foreach($viewingTask->users as $user)
+                            <span class="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-slate-100 text-slate-700">{{ $user->name }}</span>
                         @endforeach
                     </div>
-
-                    {{-- Fullscreen lightbox with zoom & pan --}}
-                    <div x-show="lightbox"
-                         x-transition:enter="transition ease-out duration-150"
-                         x-transition:enter-start="opacity-0"
-                         x-transition:enter-end="opacity-100"
-                         x-transition:leave="transition ease-in duration-100"
-                         x-transition:leave-start="opacity-100"
-                         x-transition:leave-end="opacity-0"
-                         @keydown.escape.window="close()"
-                         @mouseup.window="drop()"
-                         @mousemove.window="pan($event)"
-                         class="fixed inset-0 bg-black z-[200] flex flex-col"
-                         style="display: none;">
-
-                        {{-- Toolbar --}}
-                        <div class="flex items-center justify-between px-4 py-2 bg-black/60 shrink-0 select-none">
-                            <div class="flex items-center gap-2">
-                                <button @click="scale = Math.min(12, scale * 1.3)" class="btn btn-sm btn-ghost text-white">＋ Zoom in</button>
-                                <button @click="scale = Math.max(1, scale / 1.3); if(scale===1){tx=0;ty=0}" class="btn btn-sm btn-ghost text-white">－ Zoom out</button>
-                                <button @click="reset()" class="btn btn-sm btn-ghost text-white">⟳ Reset</button>
-                                <span class="text-white/50 text-xs ml-2" x-text="`${Math.round(scale * 100)}%`"></span>
-                            </div>
-                            <button @click="close()" class="btn btn-sm btn-ghost text-white text-lg leading-none">✕</button>
-                        </div>
-
-                        {{-- Image area --}}
-                        <div class="flex-1 overflow-hidden flex items-center justify-center"
-                             @click="close()"
-                             @wheel.prevent="zoom($event)">
-                            <img :src="lightbox"
-                                 :style="`transform: translate(${tx}px, ${ty}px) scale(${scale}); cursor: ${dragging ? 'grabbing' : scale > 1 ? 'grab' : 'zoom-in'}; transform-origin: center;`"
-                                 class="max-w-full max-h-full object-contain select-none"
-                                 @click.stop
-                                 @mousedown.stop="grab($event)"
-                                 @dblclick.stop="scale === 1 ? (scale = 2) : reset()"
-                                 draggable="false" />
-                        </div>
-
-                        {{-- Hint --}}
-                        <div class="text-center text-white/30 text-xs py-2 shrink-0 select-none">
-                            Scroll to zoom · Drag to pan · Double-click to zoom · ESC to close
-                        </div>
-                    </div>
-                @else
-                    <p class="text-sm text-base-content/40 italic">No attachments.</p>
+                </div>
                 @endif
+
+                {{-- Attachments --}}
+                <div x-data="{
+                    lightbox: null,
+                    scale: 1, tx: 0, ty: 0,
+                    p1: null, p2: null, lastDist: 0, moved: false, closable: false,
+                    open(url) { this.lightbox = url; this.scale = 1; this.tx = 0; this.ty = 0; },
+                    close() { this.lightbox = null; this.p1 = null; this.p2 = null; this.lastDist = 0; this.moved = false; },
+                    zoom(e) {
+                        e.preventDefault();
+                        const factor = e.deltaY < 0 ? 1.15 : 0.87;
+                        this.scale = Math.max(1, Math.min(12, this.scale * factor));
+                        if (this.scale === 1) { this.tx = 0; this.ty = 0; }
+                    },
+                    reset() { this.scale = 1; this.tx = 0; this.ty = 0; },
+                    down(e) {
+                        e.currentTarget.setPointerCapture(e.pointerId);
+                        if (!this.p1) { this.moved = false; this.closable = e.target === e.currentTarget; }
+                        if (!this.p1) this.p1 = {id: e.pointerId, x: e.clientX, y: e.clientY};
+                        else if (!this.p2 && e.pointerId !== this.p1.id)
+                            this.p2 = {id: e.pointerId, x: e.clientX, y: e.clientY};
+                        if (this.p1 && this.p2)
+                            this.lastDist = Math.hypot(this.p2.x - this.p1.x, this.p2.y - this.p1.y);
+                    },
+                    onMove(e) {
+                        if (!this.p1) return;
+                        this.moved = true;
+                        if (this.p2) {
+                            if (e.pointerId === this.p1.id) this.p1 = {id: this.p1.id, x: e.clientX, y: e.clientY};
+                            else if (e.pointerId === this.p2.id) this.p2 = {id: this.p2.id, x: e.clientX, y: e.clientY};
+                            const dist = Math.hypot(this.p2.x - this.p1.x, this.p2.y - this.p1.y);
+                            if (this.lastDist > 0) {
+                                const f = dist / this.lastDist;
+                                this.scale = Math.max(1, Math.min(12, this.scale * f));
+                                if (this.scale === 1) { this.tx = 0; this.ty = 0; }
+                            }
+                            this.lastDist = dist;
+                        } else if (e.pointerId === this.p1.id && this.scale > 1) {
+                            this.tx += e.clientX - this.p1.x;
+                            this.ty += e.clientY - this.p1.y;
+                            this.p1 = {id: this.p1.id, x: e.clientX, y: e.clientY};
+                        }
+                    },
+                    onEnd(e) {
+                        const wasOne = !!this.p1 && !this.p2;
+                        if (this.p2 && e.pointerId === this.p2.id) { this.p2 = null; this.lastDist = 0; }
+                        else if (this.p1 && e.pointerId === this.p1.id) { this.p1 = this.p2; this.p2 = null; this.lastDist = 0; }
+                        if (!this.p1 && wasOne && !this.moved && this.closable) this.close();
+                        if (!this.p1) this.moved = false;
+                    },
+                    onCancel() { this.p1 = null; this.p2 = null; this.lastDist = 0; this.moved = false; }
+                }">
+                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Attachments</p>
+                    @if(!empty($viewingTask->attachments))
+                        <div class="flex flex-wrap gap-2">
+                            @foreach($viewingTask->attachments as $path)
+                                @php $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION)); @endphp
+                                @if(in_array($ext, ['jpg', 'jpeg']))
+                                    @php $url = route('admin.attachments.view', base64_encode($path)); @endphp
+                                    <img src="{{ $url }}"
+                                         alt="{{ basename($path) }}"
+                                         class="w-24 h-24 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity border border-slate-200"
+                                         @click="open('{{ $url }}')" />
+                                @else
+                                    <a href="{{ route('admin.attachments.view', base64_encode($path)) }}"
+                                       target="_blank"
+                                       class="flex items-center gap-2 bg-slate-50 hover:bg-slate-100 border border-slate-200 px-3 py-2 rounded-lg text-sm text-blue-600 hover:text-blue-700 transition-colors duration-150">
+                                        <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/>
+                                        </svg>
+                                        {{ basename($path) }}
+                                    </a>
+                                @endif
+                            @endforeach
+                        </div>
+
+                        {{-- Fullscreen lightbox --}}
+                        <div x-show="lightbox"
+                             x-transition:enter="transition ease-out duration-150"
+                             x-transition:enter-start="opacity-0"
+                             x-transition:enter-end="opacity-100"
+                             x-transition:leave="transition ease-in duration-100"
+                             x-transition:leave-start="opacity-100"
+                             x-transition:leave-end="opacity-0"
+                             @keydown.escape.window="close()"
+                             class="fixed inset-0 bg-black z-[200] flex flex-col"
+                             style="display: none;">
+                            <div class="flex items-center justify-between px-4 py-2 bg-black/60 shrink-0 select-none">
+                                <div class="flex items-center gap-2">
+                                    <button @click="scale = Math.min(12, scale * 1.3)" class="btn btn-sm btn-ghost text-white">+ Zoom in</button>
+                                    <button @click="scale = Math.max(1, scale / 1.3); if(scale===1){tx=0;ty=0}" class="btn btn-sm btn-ghost text-white">- Zoom out</button>
+                                    <button @click="reset()" class="btn btn-sm btn-ghost text-white">Reset</button>
+                                    <span class="text-white/50 text-xs ml-2" x-text="`${Math.round(scale * 100)}%`"></span>
+                                </div>
+                                <button @click="close()" class="btn btn-sm btn-ghost text-white text-lg leading-none">X</button>
+                            </div>
+                            <div class="flex-1 overflow-hidden flex items-center justify-center"
+                                 @pointerdown="down($event)"
+                                 @pointermove="onMove($event)"
+                                 @pointerup="onEnd($event)"
+                                 @pointercancel="onCancel()"
+                                 @wheel.prevent="zoom($event)"
+                                 style="touch-action: none; user-select: none;">
+                                <img :src="lightbox"
+                                     :style="`transform: translate(${tx}px, ${ty}px) scale(${scale}); cursor: ${scale > 1 ? 'grab' : 'zoom-in'}; transform-origin: center;`"
+                                     class="max-w-full max-h-full object-contain select-none"
+                                     @dblclick.stop="scale === 1 ? (scale = 2) : reset()" draggable="false" />
+                            </div>
+                            <div class="text-center text-white/30 text-xs py-2 shrink-0 select-none"
+                                 x-text="('ontouchstart' in window) ? 'Pinch to zoom · Drag to pan · Tap background to close' : 'Scroll to zoom · Drag to pan · Double-click to zoom · ESC to close'">
+                            </div>
+                        </div>
+                    @else
+                        <p class="text-sm text-slate-400 italic">No attachments.</p>
+                    @endif
+                </div>
             </div>
 
-            <div class="modal-action">
-                <button wire:click="openEdit({{ $viewingTask->id }})" class="btn btn-sm btn-outline">Edit</button>
-                <button wire:click="closeViewModal" class="btn btn-sm btn-primary">Close</button>
+            {{-- Modal footer --}}
+            <div class="flex items-center justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50">
+                <button wire:click="openEdit({{ $viewingTask->id }})"
+                        class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors duration-150">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                    </svg>
+                    Edit
+                </button>
+                <button wire:click="closeViewModal"
+                        class="inline-flex items-center px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors duration-150">
+                    Close
+                </button>
             </div>
         </div>
         <div class="modal-backdrop" wire:click="closeViewModal"></div>
@@ -386,109 +493,109 @@ new class extends Component {
     {{-- Edit Modal --}}
     @if($showEditModal)
     <div class="modal modal-open">
-        <div class="modal-box w-11/12 max-w-lg">
-            <h3 class="font-bold text-lg mb-4">Edit Task</h3>
-            <form wire:submit="saveEdit" class="space-y-4">
+        <div class="modal-box w-11/12 max-w-lg rounded-2xl p-0 overflow-hidden">
+            <div class="flex items-center justify-between px-6 py-5 border-b border-slate-100">
+                <h3 class="font-semibold text-slate-900 text-lg">Edit Task</h3>
+                <button wire:click="closeEditModal" class="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors duration-150">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="px-6 py-5 max-h-[65vh] overflow-y-auto">
+            <form wire:submit="saveEdit" class="space-y-4" id="editForm">
 
-                {{-- Project --}}
-                <div class="form-control">
-                    <label class="label"><span class="label-text font-medium">Project</span></label>
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Project</label>
                     <input wire:model="editTitle" type="text"
-                           class="input input-bordered @error('editTitle') input-error @enderror"
+                           class="block w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 transition-colors duration-150 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 outline-none @error('editTitle') border-red-400 bg-red-50 @enderror"
                            placeholder="Task title" autofocus />
-                    @error('editTitle') <label class="label"><span class="label-text-alt text-error">{{ $message }}</span></label> @enderror
+                    @error('editTitle') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
-                {{-- Address --}}
-                <div class="form-control">
-                    <label class="label"><span class="label-text font-medium">Address</span></label>
-                    <textarea wire:model="editAddress" rows="3"
-                              class="textarea textarea-bordered @error('editAddress') textarea-error @enderror"
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Address</label>
+                    <textarea wire:model="editAddress" rows="2"
+                              class="block w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 transition-colors duration-150 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 outline-none resize-none @error('editAddress') border-red-400 bg-red-50 @enderror"
                               placeholder="Site address..."></textarea>
-                    @error('editAddress') <label class="label"><span class="label-text-alt text-error">{{ $message }}</span></label> @enderror
+                    @error('editAddress') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
-                {{-- Materials --}}
-                <div class="form-control">
-                    <label class="label"><span class="label-text font-medium">Materials</span></label>
-                    <textarea wire:model="editMaterials" rows="3"
-                              class="textarea textarea-bordered @error('editMaterials') textarea-error @enderror"
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Materials</label>
+                    <textarea wire:model="editMaterials" rows="2"
+                              class="block w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 transition-colors duration-150 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 outline-none resize-none @error('editMaterials') border-red-400 bg-red-50 @enderror"
                               placeholder="Required materials..."></textarea>
-                    @error('editMaterials') <label class="label"><span class="label-text-alt text-error">{{ $message }}</span></label> @enderror
+                    @error('editMaterials') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
-                {{-- Description --}}
-                <div class="form-control">
-                    <label class="label"><span class="label-text font-medium">Description</span></label>
-                    <textarea wire:model="editDescription" rows="3"
-                              class="textarea textarea-bordered @error('editDescription') textarea-error @enderror"
+                <div>
+                    <label class="block text-sm font-medium text-slate-700 mb-1">Description</label>
+                    <textarea wire:model="editDescription" rows="2"
+                              class="block w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm text-slate-900 placeholder-slate-400 transition-colors duration-150 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 outline-none resize-none @error('editDescription') border-red-400 bg-red-50 @enderror"
                               placeholder="Optional description..."></textarea>
-                    @error('editDescription') <label class="label"><span class="label-text-alt text-error">{{ $message }}</span></label> @enderror
+                    @error('editDescription') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
-                {{-- Employees --}}
-                <div class="form-control">
-                    <label class="label">
-                        <span class="label-text font-medium">Assign to Employees</span>
-                        <span class="label-text-alt text-base-content/50">{{ count($editSelectedEmployees) }} selected</span>
-                    </label>
-                    <div class="border border-base-300 rounded-box p-3 max-h-40 overflow-y-auto space-y-1">
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="block text-sm font-medium text-slate-700">Assign to Employees</label>
+                        <span class="text-xs text-slate-400">{{ count($editSelectedEmployees) }} selected</span>
+                    </div>
+                    <div class="border border-slate-300 rounded-lg p-2 max-h-36 overflow-y-auto space-y-0.5">
                         @forelse($employees as $employee)
-                            <label class="flex items-center gap-3 cursor-pointer hover:bg-base-200 px-2 py-1.5 rounded-lg">
+                            <label class="flex items-center gap-3 cursor-pointer hover:bg-slate-50 px-2 py-1.5 rounded-md">
                                 <input type="checkbox" wire:model="editSelectedEmployees" value="{{ $employee->id }}"
                                        class="checkbox checkbox-primary checkbox-sm" />
-                                <span class="text-sm">{{ $employee->name }}</span>
+                                <span class="text-sm text-slate-700">{{ $employee->name }}</span>
                             </label>
                         @empty
-                            <p class="text-sm text-base-content/50 text-center py-2">No employees found.</p>
+                            <p class="text-sm text-slate-400 text-center py-2">No employees found.</p>
                         @endforelse
                     </div>
-                    @error('editSelectedEmployees') <label class="label"><span class="label-text-alt text-error">{{ $message }}</span></label> @enderror
+                    @error('editSelectedEmployees') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
-                {{-- Existing Attachments --}}
                 @if(!empty($existingAttachments))
-                    <div class="form-control">
-                        <label class="label"><span class="label-text font-medium">Current Attachments</span></label>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1">Current Attachments</label>
                         <ul class="space-y-1">
                             @foreach($existingAttachments as $path)
-                                <li class="flex items-center justify-between gap-2 text-sm bg-base-200 px-3 py-1.5 rounded-lg">
-                                    <span class="truncate text-base-content/70 font-mono">{{ basename($path) }}</span>
+                                <li class="flex items-center justify-between gap-2 text-sm bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg">
+                                    <span class="truncate text-slate-600 font-mono text-xs">{{ basename($path) }}</span>
                                     <button type="button" wire:click="removeExistingAttachment('{{ $path }}')"
-                                            class="text-error hover:text-error shrink-0 text-xs">Remove</button>
+                                            class="text-red-500 hover:text-red-700 shrink-0 text-xs font-medium">Remove</button>
                                 </li>
                             @endforeach
                         </ul>
                     </div>
                 @endif
 
-                {{-- New Attachments --}}
-                <div class="form-control"
-                     x-data="{
-                         uploading: false,
-                         progress: 0,
-                         handle(e) {
-                             const selected = Array.from(e.target.files);
-                             if (!selected.length) return;
-                             this.uploading = true;
-                             this.progress = 0;
-                             $wire.uploadMultiple('newAttachmentBatch', selected,
-                                 () => { this.uploading = false; $wire.call('addEditBatch'); e.target.value = ''; },
-                                 () => { this.uploading = false; },
-                                 (pct) => { this.progress = pct; }
-                             );
-                         }
-                     }">
-                    <label class="label">
-                        <span class="label-text font-medium">Add Attachments</span>
-                        <span class="label-text-alt text-base-content/50">JPG / PDF · max 15 MB · można dodawać partiami</span>
-                    </label>
+                <div x-data="{
+                    uploading: false,
+                    progress: 0,
+                    handle(e) {
+                        const selected = Array.from(e.target.files);
+                        if (!selected.length) return;
+                        this.uploading = true;
+                        this.progress = 0;
+                        $wire.uploadMultiple('newAttachmentBatch', selected,
+                            () => { this.uploading = false; $wire.call('addEditBatch'); e.target.value = ''; },
+                            () => { this.uploading = false; },
+                            (pct) => { this.progress = isFinite(pct) ? pct : 0; }
+                        );
+                    }
+                }">
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="block text-sm font-medium text-slate-700">Add Attachments</label>
+                        <span class="text-xs text-slate-400">JPG / PDF · max 15 MB</span>
+                    </div>
                     <input type="file" multiple accept=".jpg,.jpeg,.pdf"
                            @change="handle($event)"
-                           class="file-input file-input-bordered file-input-sm w-full @error('newAttachments') file-input-error @enderror" />
+                           class="block w-full text-sm text-slate-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 border border-slate-300 rounded-lg cursor-pointer @error('newAttachments') border-red-400 @enderror" />
 
                     <div x-show="uploading" class="mt-2">
-                        <div class="flex items-center gap-2 text-sm text-info">
+                        <div class="flex items-center gap-2 text-xs text-blue-600">
                             <span class="loading loading-spinner loading-xs"></span>
                             Uploading... <span x-text="progress + '%'"></span>
                         </div>
@@ -498,26 +605,33 @@ new class extends Component {
                     @if(count($newAttachments) > 0)
                         <ul class="mt-2 space-y-1">
                             @foreach($newAttachments as $i => $file)
-                                <li class="flex items-center justify-between gap-2 text-xs bg-base-200 px-3 py-1.5 rounded-lg">
-                                    <span class="text-base-content/70 truncate">{{ $file->getClientOriginalName() }}</span>
+                                <li class="flex items-center justify-between gap-2 text-xs bg-slate-50 border border-slate-200 px-3 py-1.5 rounded-lg">
+                                    <span class="text-slate-600 truncate">{{ $file->getClientOriginalName() }}</span>
                                     <button type="button" wire:click="removeNewAttachment({{ $i }})"
-                                            class="text-error shrink-0 hover:underline">Remove</button>
+                                            class="text-red-500 hover:text-red-700 shrink-0 font-medium">Remove</button>
                                 </li>
                             @endforeach
                         </ul>
                     @endif
-
-                    @error('newAttachments.*') <label class="label"><span class="label-text-alt text-error">{{ $message }}</span></label> @enderror
+                    @error('newAttachments.*') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
                 </div>
 
-                <div class="modal-action">
-                    <button type="button" wire:click="closeEditModal" class="btn btn-ghost">Cancel</button>
-                    <button type="submit" class="btn btn-primary" wire:loading.attr="disabled" wire:target="saveEdit">
-                        <span wire:loading.remove wire:target="saveEdit">Save Changes</span>
-                        <span wire:loading wire:target="saveEdit"><span class="loading loading-spinner loading-sm"></span></span>
-                    </button>
-                </div>
             </form>
+            </div>
+            <div class="flex items-center justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50">
+                <button type="button" wire:click="closeEditModal"
+                        class="inline-flex items-center px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors duration-150">
+                    Cancel
+                </button>
+                <button type="submit" form="editForm"
+                        class="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors duration-150 disabled:opacity-60"
+                        wire:loading.attr="disabled" wire:target="saveEdit">
+                    <span wire:loading.remove wire:target="saveEdit">Save Changes</span>
+                    <span wire:loading wire:target="saveEdit" class="flex items-center gap-1.5">
+                        <span class="loading loading-spinner loading-sm"></span>
+                    </span>
+                </button>
+            </div>
         </div>
         <div class="modal-backdrop" wire:click="closeEditModal"></div>
     </div>
@@ -526,12 +640,28 @@ new class extends Component {
     {{-- Confirm Delete --}}
     @if($showDeleteModal)
     <div class="modal modal-open">
-        <div class="modal-box w-11/12 max-w-lg">
-            <h3 class="font-bold text-lg">Delete Task</h3>
-            <p class="py-4 text-base-content/70">This will permanently delete the task and all its attachments. Employees will lose access to it.</p>
-            <div class="modal-action">
-                <button type="button" wire:click="closeModal" class="btn btn-ghost">Cancel</button>
-                <button type="button" wire:click="destroy" class="btn btn-error" wire:loading.attr="disabled">Delete</button>
+        <div class="modal-box w-11/12 max-w-sm rounded-2xl p-0 overflow-hidden">
+            <div class="px-6 py-5">
+                <div class="flex items-center gap-3 mb-3">
+                    <div class="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center shrink-0">
+                        <svg class="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                    </div>
+                    <h3 class="font-semibold text-slate-900">Delete Task</h3>
+                </div>
+                <p class="text-sm text-slate-600">This will permanently delete the task and all its attachments. Employees will lose access to it.</p>
+            </div>
+            <div class="flex items-center justify-end gap-2 px-6 py-4 border-t border-slate-100 bg-slate-50">
+                <button type="button" wire:click="closeModal"
+                        class="inline-flex items-center px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 rounded-lg transition-colors duration-150">
+                    Cancel
+                </button>
+                <button type="button" wire:click="destroy"
+                        class="inline-flex items-center px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors duration-150 disabled:opacity-60"
+                        wire:loading.attr="disabled">
+                    Delete
+                </button>
             </div>
         </div>
         <div class="modal-backdrop" wire:click="closeModal"></div>

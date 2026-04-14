@@ -2,10 +2,16 @@
 
 use App\Models\Setting;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Livewire\Volt\Component;
 
 new class extends Component
 {
+    public function mount(): void
+    {
+        abort_unless(auth()->check() && auth()->user()->isAdmin(), 403);
+    }
+
     // Admin PIN change
     public string $current_pin = '';
     public string $new_pin = '';
@@ -23,7 +29,7 @@ new class extends Component
 
         $user = Auth::user();
 
-        if ($this->current_pin !== $user->pin) {
+        if (!Hash::check($this->current_pin, (string) $user->pin)) {
             $this->addError('current_pin', 'Current PIN is incorrect.');
             $this->current_pin = '';
             return;
@@ -68,7 +74,7 @@ new class extends Component
             return;
         }
 
-        Setting::set('employee_pin', $this->new_employee_pin);
+        Setting::set('employee_pin', Hash::make($this->new_employee_pin));
 
         $this->new_employee_pin = '';
         $this->confirm_employee_pin = '';
@@ -76,84 +82,119 @@ new class extends Component
     }
 }; ?>
 
-<div class="space-y-8">
-
-    {{-- Admin PIN --}}
-    <div class="card bg-base-100 shadow">
-        <div class="card-body space-y-4">
-            <h3 class="font-semibold text-lg">Admin PIN <span class="text-base-content/40 text-sm font-normal">(6 digits)</span></h3>
-
-            @if($admin_success)
-                <div class="alert alert-success">
-                    <span>Admin PIN changed successfully.</span>
-                </div>
-            @endif
-
-            <form wire:submit="saveAdminPin" class="space-y-4">
-                <div class="form-control">
-                    <label class="label"><span class="label-text font-medium">Current PIN</span></label>
-                    <input wire:model="current_pin" type="password" inputmode="numeric" maxlength="6"
-                           class="input input-bordered @error('current_pin') input-error @enderror" autocomplete="off" />
-                    @error('current_pin') <label class="label"><span class="label-text-alt text-error">{{ $message }}</span></label> @enderror
-                </div>
-                <div class="form-control">
-                    <label class="label"><span class="label-text font-medium">New PIN</span></label>
-                    <input wire:model="new_pin" type="password" inputmode="numeric" maxlength="6"
-                           class="input input-bordered @error('new_pin') input-error @enderror" autocomplete="off" />
-                    @error('new_pin') <label class="label"><span class="label-text-alt text-error">{{ $message }}</span></label> @enderror
-                </div>
-                <div class="form-control">
-                    <label class="label"><span class="label-text font-medium">Confirm New PIN</span></label>
-                    <input wire:model="confirm_pin" type="password" inputmode="numeric" maxlength="6"
-                           class="input input-bordered @error('confirm_pin') input-error @enderror" autocomplete="off" />
-                    @error('confirm_pin') <label class="label"><span class="label-text-alt text-error">{{ $message }}</span></label> @enderror
-                </div>
-                <div class="flex gap-3 pt-2">
-                    <button type="submit" class="btn btn-primary" wire:loading.attr="disabled" wire:target="saveAdminPin">
-                        <span wire:loading.remove wire:target="saveAdminPin">Save Admin PIN</span>
-                        <span wire:loading wire:target="saveAdminPin"><span class="loading loading-spinner loading-sm"></span></span>
-                    </button>
-                </div>
-            </form>
+<div class="max-w-xl page-enter">
+    {{-- Page header --}}
+    <div class="flex items-center gap-3 mb-6">
+        <a href="{{ route('admin.dashboard') }}"
+           class="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors duration-150">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+        </a>
+        <div>
+            <h1 class="text-2xl font-bold text-slate-900">Settings</h1>
+            <p class="text-slate-500 text-sm mt-0.5">Manage PINs for access control</p>
         </div>
     </div>
 
-    {{-- Global Employee PIN — super admin only --}}
-    @if(auth()->user()->isSuperAdmin())
-    <div class="card bg-base-100 shadow">
-        <div class="card-body space-y-4">
-            <h3 class="font-semibold text-lg">Employee PIN <span class="text-base-content/40 text-sm font-normal">(4 digits · shared by all employees)</span></h3>
+    <div class="space-y-5">
+        {{-- Admin PIN --}}
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden" style="box-shadow: 0 1px 3px 0 rgba(0,0,0,0.04);">
+            <div class="px-6 py-4 border-b border-slate-100">
+                <h2 class="text-sm font-semibold text-slate-900">Admin PIN</h2>
+                <p class="text-xs text-slate-500 mt-0.5">6-digit PIN used to sign in as administrator</p>
+            </div>
+            <div class="px-6 py-5">
+                @if($admin_success)
+                    <div class="flex items-center gap-3 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg mb-4 text-sm">
+                        <svg class="w-4 h-4 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Admin PIN changed successfully.
+                    </div>
+                @endif
 
-            @if($employee_success)
-                <div class="alert alert-success">
-                    <span>Employee PIN updated successfully.</span>
-                </div>
-            @endif
-
-            <form wire:submit="saveEmployeePin" class="space-y-4">
-                <div class="form-control">
-                    <label class="label"><span class="label-text font-medium">New Employee PIN</span></label>
-                    <input wire:model="new_employee_pin" type="password" inputmode="numeric" maxlength="4"
-                           class="input input-bordered @error('new_employee_pin') input-error @enderror" autocomplete="off" />
-                    @error('new_employee_pin') <label class="label"><span class="label-text-alt text-error">{{ $message }}</span></label> @enderror
-                </div>
-                <div class="form-control">
-                    <label class="label"><span class="label-text font-medium">Confirm Employee PIN</span></label>
-                    <input wire:model="confirm_employee_pin" type="password" inputmode="numeric" maxlength="4"
-                           class="input input-bordered @error('confirm_employee_pin') input-error @enderror" autocomplete="off" />
-                    @error('confirm_employee_pin') <label class="label"><span class="label-text-alt text-error">{{ $message }}</span></label> @enderror
-                </div>
-                <div class="flex gap-3 pt-2">
-                    <button type="submit" class="btn btn-primary" wire:loading.attr="disabled" wire:target="saveEmployeePin">
-                        <span wire:loading.remove wire:target="saveEmployeePin">Save Employee PIN</span>
-                        <span wire:loading wire:target="saveEmployeePin"><span class="loading loading-spinner loading-sm"></span></span>
-                    </button>
-                </div>
-            </form>
+                <form wire:submit="saveAdminPin" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Current PIN</label>
+                        <input wire:model="current_pin" type="password" inputmode="numeric" maxlength="6"
+                               class="block w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm font-mono text-slate-900 placeholder-slate-400 transition-colors duration-150 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 outline-none @error('current_pin') border-red-400 bg-red-50 @enderror"
+                               placeholder="••••••" autocomplete="off" />
+                        @error('current_pin') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">New PIN</label>
+                        <input wire:model="new_pin" type="password" inputmode="numeric" maxlength="6"
+                               class="block w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm font-mono text-slate-900 placeholder-slate-400 transition-colors duration-150 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 outline-none @error('new_pin') border-red-400 bg-red-50 @enderror"
+                               placeholder="••••••" autocomplete="off" />
+                        @error('new_pin') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Confirm New PIN</label>
+                        <input wire:model="confirm_pin" type="password" inputmode="numeric" maxlength="6"
+                               class="block w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm font-mono text-slate-900 placeholder-slate-400 transition-colors duration-150 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 outline-none @error('confirm_pin') border-red-400 bg-red-50 @enderror"
+                               placeholder="••••••" autocomplete="off" />
+                        @error('confirm_pin') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                    </div>
+                    <div class="pt-1">
+                        <button type="submit"
+                                class="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-60"
+                                wire:loading.attr="disabled" wire:target="saveAdminPin">
+                            <span wire:loading.remove wire:target="saveAdminPin">Save Admin PIN</span>
+                            <span wire:loading wire:target="saveAdminPin" class="flex items-center gap-1.5">
+                                <span class="loading loading-spinner loading-sm"></span>
+                            </span>
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
+
+        {{-- Global Employee PIN — super admin only --}}
+        @if(auth()->user()->isSuperAdmin())
+        <div class="bg-white rounded-xl border border-slate-200 overflow-hidden" style="box-shadow: 0 1px 3px 0 rgba(0,0,0,0.04);">
+            <div class="px-6 py-4 border-b border-slate-100">
+                <h2 class="text-sm font-semibold text-slate-900">Employee PIN</h2>
+                <p class="text-xs text-slate-500 mt-0.5">4-digit shared PIN used by all employees to sign in</p>
+            </div>
+            <div class="px-6 py-5">
+                @if($employee_success)
+                    <div class="flex items-center gap-3 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg mb-4 text-sm">
+                        <svg class="w-4 h-4 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Employee PIN updated successfully.
+                    </div>
+                @endif
+
+                <form wire:submit="saveEmployeePin" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">New Employee PIN</label>
+                        <input wire:model="new_employee_pin" type="password" inputmode="numeric" maxlength="4"
+                               class="block w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm font-mono text-slate-900 placeholder-slate-400 transition-colors duration-150 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 outline-none @error('new_employee_pin') border-red-400 bg-red-50 @enderror"
+                               placeholder="••••" autocomplete="off" />
+                        @error('new_employee_pin') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-slate-700 mb-1.5">Confirm Employee PIN</label>
+                        <input wire:model="confirm_employee_pin" type="password" inputmode="numeric" maxlength="4"
+                               class="block w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm font-mono text-slate-900 placeholder-slate-400 transition-colors duration-150 focus:border-blue-500 focus:ring-2 focus:ring-blue-500 outline-none @error('confirm_employee_pin') border-red-400 bg-red-50 @enderror"
+                               placeholder="••••" autocomplete="off" />
+                        @error('confirm_employee_pin') <p class="mt-1 text-xs text-red-600">{{ $message }}</p> @enderror
+                    </div>
+                    <div class="pt-1">
+                        <button type="submit"
+                                class="inline-flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-60"
+                                wire:loading.attr="disabled" wire:target="saveEmployeePin">
+                            <span wire:loading.remove wire:target="saveEmployeePin">Save Employee PIN</span>
+                            <span wire:loading wire:target="saveEmployeePin" class="flex items-center gap-1.5">
+                                <span class="loading loading-spinner loading-sm"></span>
+                            </span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        @endif
     </div>
-
-    @endif
-
-    <a href="{{ route('admin.dashboard') }}" class="btn btn-ghost btn-sm">← Back to Dashboard</a>
 </div>

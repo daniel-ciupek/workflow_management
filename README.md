@@ -1,58 +1,225 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Workflow Management
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Aplikacja do zarządzania zadaniami dla zespołów. Administratorzy tworzą i przypisują zadania pracownikom. Pracownicy logują się wspólnym PINem, wybierają swoją tożsamość i zarządzają przydzielonymi zadaniami.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Spis treści
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- [Stos technologiczny](#stos-technologiczny)
+- [Wymagania](#wymagania)
+- [Instalacja i uruchomienie](#instalacja-i-uruchomienie)
+- [Domyślne dane logowania](#domyślne-dane-logowania)
+- [Struktura ról](#struktura-ról)
+- [Konfiguracja produkcyjna](#konfiguracja-produkcyjna)
+- [Testy](#testy)
+- [Docker Hub](#docker-hub)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## Stos technologiczny
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+| Warstwa | Technologia |
+|---|---|
+| Backend | Laravel 13.x (PHP 8.4) |
+| Komponenty UI | Livewire 3 + Volt |
+| Interaktywność | Alpine.js |
+| Stylizacja | Tailwind CSS 3 + DaisyUI 4 |
+| Baza danych | PostgreSQL 16.2 |
+| Build tool | Vite 8 |
+| Web server | Nginx 1.27 |
+| Środowisko | Docker (PHP 8.4-fpm-alpine, Node 22-alpine) |
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+---
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+## Wymagania
 
-## Agentic Development
+- [Docker](https://docs.docker.com/get-docker/) i Docker Compose
+- Git
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+Nie potrzebujesz lokalnie PHP, Node ani Composer — wszystko działa w kontenerach.
+
+---
+
+## Instalacja i uruchomienie
+
+### 1. Sklonuj repozytorium
 
 ```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+git clone https://github.com/daniel-ciupek/workflow_management.git
+cd workflow_management
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+### 2. Skopiuj plik środowiskowy
 
-## Contributing
+```bash
+cp .env.example .env
+```
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+Domyślna konfiguracja działa od razu lokalnie — nie musisz nic zmieniać.
 
-## Code of Conduct
+### 3. Uruchom kontenery
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```bash
+docker compose up -d
+```
 
-## Security Vulnerabilities
+Przy pierwszym uruchomieniu Docker pobierze obrazy. Może to zająć kilka minut.
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### 4. Wygeneruj klucz aplikacji
 
-## License
+```bash
+docker compose exec app php artisan key:generate
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### 5. Uruchom migracje i seeder
+
+```bash
+docker compose exec app php artisan migrate --seed
+```
+
+Seeder tworzy konto Super Admina oraz ustawia domyślny PIN pracowników.
+
+### 6. Zbuduj assety frontendowe
+
+```bash
+docker compose exec node npm run build
+```
+
+> Kontener `node` automatycznie uruchamia też Vite dev server (`npm run dev`) przy starcie — assety są dostępne na bieżąco bez ręcznego budowania podczas developmentu.
+
+### 7. Otwórz aplikację
+
+```
+http://localhost:8000
+```
+
+---
+
+## Domyślne dane logowania
+
+### Administrator (Super Admin)
+
+| Pole | Wartość |
+|---|---|
+| PIN | `000000` |
+| Długość | 6 cyfr |
+
+Po zalogowaniu zostaniesz przekierowany do panelu admina.
+
+> Zmień domyślny PIN po pierwszym logowaniu: **Settings → Admin PIN**.
+
+### Pracownicy
+
+| Pole | Wartość |
+|---|---|
+| PIN | `1234` |
+| Długość | 4 cyfry (wspólny dla wszystkich pracowników) |
+
+Po zalogowaniu PINem pracownika pojawia się ekran wyboru tożsamości — wybierz swoje imię z listy.
+
+> PIN pracowników może zmienić wyłącznie Super Admin: **Settings → Employee PIN**.
+
+---
+
+## Struktura ról
+
+### Super Admin
+- Zarządza wszystkimi administratorami (tworzenie, usuwanie)
+- Przypisuje pracowników do dowolnego admina
+- Zmienia globalny PIN pracowników
+- Ma dostęp do wszystkich danych w systemie
+
+### Admin
+- Tworzy i zarządza zadaniami dla swoich pracowników
+- Widzi tylko pracowników przypisanych do siebie
+- Może zmieniać swój własny PIN (6 cyfr)
+
+### Pracownik
+- Loguje się wspólnym 4-cyfrowym PINem
+- Wybiera swoją tożsamość z listy po zalogowaniu
+- Widzi przypisane aktywne zadania
+- Ma dostęp do historii zakończonych zadań (max 5 ostatnich)
+
+---
+
+## Automatyczna archiwizacja zadań
+
+Zadania są automatycznie archiwizowane po 24 godzinach od utworzenia przez dedykowany serwis schedulera (`php artisan schedule:work`) działający jako osobny kontener Docker. Na każdego pracownika przechowywanych jest maksymalnie 5 ostatnich zarchiwizowanych zadań — starsze są usuwane automatycznie wraz z załącznikami.
+
+---
+
+## Konfiguracja produkcyjna
+
+Przed wdrożeniem na serwer ustaw w pliku `.env`:
+
+```env
+APP_ENV=production
+APP_DEBUG=false
+APP_URL=https://twoja-domena.pl
+
+LOG_LEVEL=warning
+
+SESSION_ENCRYPT=true
+SESSION_SECURE_COOKIE=true   # wymaga HTTPS
+```
+
+Po deploymencie uruchom:
+
+```bash
+docker compose exec app php artisan migrate --force
+docker compose exec app php artisan config:cache
+docker compose exec app php artisan route:cache
+docker compose exec app php artisan view:cache
+docker compose exec node npm run build
+```
+
+---
+
+## Testy
+
+Uruchom pełny zestaw testów (76 testów, 151 asercji):
+
+```bash
+docker compose exec app php artisan test
+```
+
+### Zakres testów
+
+| Obszar | Liczba testów |
+|---|---|
+| Autentykacja PIN (admin + pracownik, rate limiting) | 11 |
+| Middleware dostępu (IsAdmin, IsEmployee) | 6 |
+| Zarządzanie pracownikami (CRUD, cascade delete) | 8 |
+| Zarządzanie zadaniami (CRUD, archiwizacja) | 8 |
+| Historia zadań admina | 3 |
+| Dashboard pracownika | 3 |
+| Zmiana PINów (walidacja, weryfikacja) | 8 |
+| Obserwator zadań (czyszczenie, pruning) | 5 |
+| Komenda archiwizacji (logika 24h) | 4 |
+| Uprawnienia admina (super vs regularny) | 7 |
+| Inne | 3 |
+
+---
+
+## Docker Hub
+
+Obraz aplikacji dostępny publicznie:
+
+```
+danielciupek/workflow-management:1.1.0
+```
+
+```bash
+docker pull danielciupek/workflow-management:1.1.0
+```
+
+---
+
+## Porty
+
+| Port | Usługa |
+|---|---|
+| `8000` / `80` | Aplikacja (Nginx) |
+| `5173` | Vite HMR (dev server) |
+| `5432` | PostgreSQL |

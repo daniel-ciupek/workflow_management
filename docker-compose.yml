@@ -1,6 +1,6 @@
 services:
   app:
-    image: danielciupek/workflow-management:latest
+    image: danielciupek/workflow-management:1.1.0
     container_name: workflow_app
     restart: unless-stopped
     volumes:
@@ -8,7 +8,7 @@ services:
       - /var/www/html/vendor
       - /var/www/html/node_modules
     environment:
-      - APP_ENV=${APP_ENV:-local}
+      - APP_ENV=${APP_ENV:-local}  # production server: set APP_ENV=production in .env
     depends_on:
       postgres:
         condition: service_healthy
@@ -43,6 +43,21 @@ services:
       interval: 5s
       timeout: 5s
       retries: 5
+
+  scheduler:
+    image: danielciupek/workflow-management:1.1.0
+    container_name: workflow_scheduler
+    restart: unless-stopped
+    volumes:
+      - .:/var/www/html
+      - /var/www/html/vendor
+      - /var/www/html/node_modules
+    environment:
+      - APP_ENV=${APP_ENV:-local}  # production server: set APP_ENV=production in .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: php artisan schedule:work
 
   node:
     image: node:22-alpine
