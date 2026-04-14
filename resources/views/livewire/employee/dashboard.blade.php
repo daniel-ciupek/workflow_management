@@ -184,19 +184,52 @@ new class extends Component {
                 <div x-data="{
                     lightbox: null,
                     scale: 1, tx: 0, ty: 0,
-                    dragging: false, ox: 0, oy: 0,
+                    p1: null, p2: null, lastDist: 0, moved: false, closable: false,
                     open(url) { this.lightbox = url; this.scale = 1; this.tx = 0; this.ty = 0; },
-                    close() { this.lightbox = null; },
+                    close() { this.lightbox = null; this.p1 = null; this.p2 = null; this.lastDist = 0; this.moved = false; },
                     zoom(e) {
                         e.preventDefault();
                         const factor = e.deltaY < 0 ? 1.15 : 0.87;
                         this.scale = Math.max(1, Math.min(12, this.scale * factor));
                         if (this.scale === 1) { this.tx = 0; this.ty = 0; }
                     },
-                    grab(e) { if (this.scale > 1) { this.dragging = true; this.ox = e.clientX - this.tx; this.oy = e.clientY - this.ty; } },
-                    pan(e) { if (this.dragging) { this.tx = e.clientX - this.ox; this.ty = e.clientY - this.oy; } },
-                    drop() { this.dragging = false; },
-                    reset() { this.scale = 1; this.tx = 0; this.ty = 0; }
+                    reset() { this.scale = 1; this.tx = 0; this.ty = 0; },
+                    down(e) {
+                        e.currentTarget.setPointerCapture(e.pointerId);
+                        if (!this.p1) { this.moved = false; this.closable = e.target === e.currentTarget; }
+                        if (!this.p1) this.p1 = {id: e.pointerId, x: e.clientX, y: e.clientY};
+                        else if (!this.p2 && e.pointerId !== this.p1.id)
+                            this.p2 = {id: e.pointerId, x: e.clientX, y: e.clientY};
+                        if (this.p1 && this.p2)
+                            this.lastDist = Math.hypot(this.p2.x - this.p1.x, this.p2.y - this.p1.y);
+                    },
+                    onMove(e) {
+                        if (!this.p1) return;
+                        this.moved = true;
+                        if (this.p2) {
+                            if (e.pointerId === this.p1.id) this.p1 = {id: this.p1.id, x: e.clientX, y: e.clientY};
+                            else if (e.pointerId === this.p2.id) this.p2 = {id: this.p2.id, x: e.clientX, y: e.clientY};
+                            const dist = Math.hypot(this.p2.x - this.p1.x, this.p2.y - this.p1.y);
+                            if (this.lastDist > 0) {
+                                const f = dist / this.lastDist;
+                                this.scale = Math.max(1, Math.min(12, this.scale * f));
+                                if (this.scale === 1) { this.tx = 0; this.ty = 0; }
+                            }
+                            this.lastDist = dist;
+                        } else if (e.pointerId === this.p1.id && this.scale > 1) {
+                            this.tx += e.clientX - this.p1.x;
+                            this.ty += e.clientY - this.p1.y;
+                            this.p1 = {id: this.p1.id, x: e.clientX, y: e.clientY};
+                        }
+                    },
+                    onEnd(e) {
+                        const wasOne = !!this.p1 && !this.p2;
+                        if (this.p2 && e.pointerId === this.p2.id) { this.p2 = null; this.lastDist = 0; }
+                        else if (this.p1 && e.pointerId === this.p1.id) { this.p1 = this.p2; this.p2 = null; this.lastDist = 0; }
+                        if (!this.p1 && wasOne && !this.moved && this.closable) this.close();
+                        if (!this.p1) this.moved = false;
+                    },
+                    onCancel() { this.p1 = null; this.p2 = null; this.lastDist = 0; this.moved = false; }
                 }">
                     <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5">Attachments</p>
                     @if(!empty($viewingTask->attachments))
@@ -231,8 +264,6 @@ new class extends Component {
                              x-transition:leave-start="opacity-100"
                              x-transition:leave-end="opacity-0"
                              @keydown.escape.window="close()"
-                             @mouseup.window="drop()"
-                             @mousemove.window="pan($event)"
                              class="fixed inset-0 bg-black z-[200] flex flex-col"
                              style="display: none;">
                             <div class="flex items-center justify-between px-4 py-2 bg-black/60 shrink-0 select-none">
@@ -244,14 +275,20 @@ new class extends Component {
                                 </div>
                                 <button @click="close()" class="btn btn-sm btn-ghost text-white text-lg leading-none">X</button>
                             </div>
-                            <div class="flex-1 overflow-hidden flex items-center justify-center" @click="close()" @wheel.prevent="zoom($event)">
+                            <div class="flex-1 overflow-hidden flex items-center justify-center"
+                                 @pointerdown="down($event)"
+                                 @pointermove="onMove($event)"
+                                 @pointerup="onEnd($event)"
+                                 @pointercancel="onCancel()"
+                                 @wheel.prevent="zoom($event)"
+                                 style="touch-action: none; user-select: none;">
                                 <img :src="lightbox"
-                                     :style="`transform: translate(${tx}px, ${ty}px) scale(${scale}); cursor: ${dragging ? 'grabbing' : scale > 1 ? 'grab' : 'zoom-in'}; transform-origin: center;`"
+                                     :style="`transform: translate(${tx}px, ${ty}px) scale(${scale}); cursor: ${scale > 1 ? 'grab' : 'zoom-in'}; transform-origin: center;`"
                                      class="max-w-full max-h-full object-contain select-none"
-                                     @click.stop @mousedown.stop="grab($event)" @dblclick.stop="scale === 1 ? (scale = 2) : reset()" draggable="false" />
+                                     @dblclick.stop="scale === 1 ? (scale = 2) : reset()" draggable="false" />
                             </div>
-                            <div class="text-center text-white/30 text-xs py-2 shrink-0 select-none">
-                                Scroll to zoom · Drag to pan · Double-click to zoom · ESC to close
+                            <div class="text-center text-white/30 text-xs py-2 shrink-0 select-none"
+                                 x-text="('ontouchstart' in window) ? 'Pinch to zoom · Drag to pan · Tap background to close' : 'Scroll to zoom · Drag to pan · Double-click to zoom · ESC to close'">
                             </div>
                         </div>
                     @else
