@@ -59,7 +59,10 @@ services:
         condition: service_healthy
     command: php artisan schedule:work
 
+  # DEV ONLY — Vite HMR. Start with: docker compose --profile dev up
+  # On production assets are pre-built inside the image — skip this service.
   node:
+    profiles: ["dev"]
     image: node:22-alpine
     container_name: workflow_node
     working_dir: /var/www/html
