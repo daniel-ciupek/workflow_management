@@ -51,6 +51,8 @@ new class extends Component {
 
     public function openView(int $id): void
     {
+        $task = Task::findOrFail($id);
+        abort_unless(auth()->user()->isSuperAdmin() || $task->created_by === auth()->id(), 403);
         $this->viewingId = $id;
         $this->showViewModal = true;
     }
@@ -64,6 +66,7 @@ new class extends Component {
     public function openEdit(int $id): void
     {
         $task = Task::with('users')->findOrFail($id);
+        abort_unless(auth()->user()->isSuperAdmin() || $task->created_by === auth()->id(), 403);
         $this->editingId = $id;
         $this->editTitle = $task->title;
         $this->editAddress = $task->address ?? '';
@@ -99,6 +102,7 @@ new class extends Component {
         ]);
 
         $task = Task::findOrFail($this->editingId);
+        abort_unless(auth()->user()->isSuperAdmin() || $task->created_by === auth()->id(), 403);
 
         // Delete removed attachments from disk
         foreach ($this->removedAttachments as $path) {
@@ -144,7 +148,9 @@ new class extends Component {
     {
         if (!$this->deletingId) return;
 
-        Task::findOrFail($this->deletingId)->delete();
+        $task = Task::findOrFail($this->deletingId);
+        abort_unless(auth()->user()->isSuperAdmin() || $task->created_by === auth()->id(), 403);
+        $task->delete();
 
         $this->showDeleteModal = false;
         $this->deletingId = null;
@@ -167,7 +173,9 @@ new class extends Component {
             ->paginate(10);
 
         $viewingTask = $this->viewingId
-            ? Task::with(['users' => fn ($q) => $q->select('users.id', 'users.name')])->find($this->viewingId)
+            ? Task::with(['users' => fn ($q) => $q->select('users.id', 'users.name')])
+                ->where(fn ($q) => auth()->user()->isSuperAdmin() ?: $q->where('created_by', auth()->id()))
+                ->find($this->viewingId)
             : null;
 
         return [

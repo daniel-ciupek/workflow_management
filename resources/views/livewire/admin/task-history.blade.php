@@ -38,7 +38,9 @@ new class extends Component {
     public function destroy(): void
     {
         if ($this->deletingId) {
-            Task::findOrFail($this->deletingId)->delete();
+            $task = Task::findOrFail($this->deletingId);
+            abort_unless(auth()->user()->isSuperAdmin() || $task->created_by === auth()->id(), 403);
+            $task->delete();
         }
         $this->showDeleteModal = false;
         $this->deletingId = null;
@@ -62,7 +64,9 @@ new class extends Component {
             ->paginate(15);
 
         $viewingTask = $this->viewingId
-            ? Task::with(['users' => fn ($q) => $q->withPivot('done', 'completed_at')->select('users.id', 'users.name')])->find($this->viewingId)
+            ? Task::with(['users' => fn ($q) => $q->withPivot('done', 'completed_at')->select('users.id', 'users.name')])
+                ->where(fn ($q) => auth()->user()->isSuperAdmin() ?: $q->where('created_by', auth()->id()))
+                ->find($this->viewingId)
             : null;
 
         return compact('tasks', 'viewingTask');
