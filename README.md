@@ -66,6 +66,8 @@ docker compose up -d
 
 Przy pierwszym uruchomieniu Docker pobierze obrazy. Może to zająć kilka minut.
 
+> Plik `.env.example` zawiera `COMPOSE_PROFILES=dev` — po skopiowaniu do `.env` kontener `node` z Vite dev serverem startuje automatycznie razem z pozostałymi serwisami.
+
 ### 4. Wygeneruj klucz aplikacji
 
 ```bash
@@ -80,19 +82,13 @@ docker compose exec app php artisan migrate --seed
 
 Seeder tworzy konto Super Admina oraz ustawia domyślny PIN pracowników.
 
-### 6. Zbuduj assety frontendowe
-
-```bash
-docker compose exec node npm run build
-```
-
-> Kontener `node` automatycznie uruchamia też Vite dev server (`npm run dev`) przy starcie — assety są dostępne na bieżąco bez ręcznego budowania podczas developmentu.
-
-### 7. Otwórz aplikację
+### 6. Otwórz aplikację
 
 ```
-http://localhost:8000
+http://localhost
 ```
+
+> Assety frontendowe są serwowane przez Vite dev server działający w kontenerze `node` — nie musisz nic budować ręcznie podczas developmentu.
 
 ---
 
@@ -167,12 +163,17 @@ SESSION_SECURE_COOKIE=true   # wymaga HTTPS
 Po deploymencie uruchom:
 
 ```bash
+# Zbuduj assety (jednorazowo — kontener node nie startuje na produkcji)
+docker compose --profile dev run --rm node npm run build
+
+# Uruchom migracje i zoptymalizuj aplikację
 docker compose exec app php artisan migrate --force
 docker compose exec app php artisan config:cache
 docker compose exec app php artisan route:cache
 docker compose exec app php artisan view:cache
-docker compose exec node npm run build
 ```
+
+> Obraz na Docker Hub (`danielciupek/workflow-management:1.1.0`) zawiera już zbudowane assety. Krok `npm run build` jest wymagany tylko jeśli budujesz własny obraz lub używasz lokalnych plików.
 
 ---
 
