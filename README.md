@@ -208,11 +208,11 @@ docker compose exec app php artisan test
 Obraz aplikacji dostępny publicznie:
 
 ```
-danielciupek/workflow-management:1.1.0
+danielciupek/workflow-management:1.2.0
 ```
 
 ```bash
-docker pull danielciupek/workflow-management:1.1.0
+docker pull danielciupek/workflow-management:1.2.0
 ```
 
 ---
